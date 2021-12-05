@@ -1,17 +1,12 @@
-use std::{thread, mem};
 use winapi::um::processthreadsapi::CreateThread;
 use winapi::_core::ptr::null_mut;
-use winapi::um::libloaderapi::{GetModuleHandleA, FreeLibraryAndExitThread, DisableThreadLibraryCalls};
+use winapi::um::libloaderapi::{FreeLibraryAndExitThread, DisableThreadLibraryCalls};
 use winapi::um::winuser::{FindWindowA, VK_LEFT, MessageBoxA, MB_YESNOCANCEL, GetAsyncKeyState, VK_RIGHT, MB_OK, GetForegroundWindow};
-use std::ffi::{CString, OsString};
+use std::ffi::CString;
 use winapi::shared::windef::HWND;
-use winapi::um::tlhelp32::{MAX_MODULE_NAME32, Module32FirstW, Module32NextW, CreateToolhelp32Snapshot, MODULEENTRY32W, TH32CS_SNAPMODULE};
-use winapi::shared::minwindef::{MAX_PATH, HMODULE, TRUE, LPVOID, DWORD, HINSTANCE};
-use std::path::Path;
-use winapi::um::handleapi::{INVALID_HANDLE_VALUE, CloseHandle};
-use std::os::windows::ffi::OsStringExt;
-use winapi::um::winnt::{HANDLE, DLL_PROCESS_ATTACH};
-use widestring::WideCString;
+use winapi::shared::minwindef::{LPVOID, DWORD, HINSTANCE};
+use winapi::um::handleapi::CloseHandle;
+use winapi::um::winnt::DLL_PROCESS_ATTACH;
 
 //todo macro for cstring
 

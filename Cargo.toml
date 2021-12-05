@@ -7,8 +7,7 @@ edition = "2021"
 
 [dependencies]
 jni = "0.19.0"
-winapi = { version = "0.3.9", features = ["processthreadsapi", "libloaderapi", "winuser", "tlhelp32", "handleapi", "synchapi"] }
-widestring = "1.0.0-beta.1"
+winapi = { version = "0.3.9", features = ["processthreadsapi", "libloaderapi", "winuser", "handleapi", "synchapi"] }
 
 [lib]
 crate-type = ["dylib"]
