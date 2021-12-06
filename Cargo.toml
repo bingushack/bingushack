@@ -9,7 +9,6 @@ edition = "2021"
 jni = "0.19.0"
 winapi = { version = "0.3.9", features = ["processthreadsapi", "libloaderapi", "winuser", "handleapi", "synchapi"] }
 iced = "0.3.0"
-copystr = "0.0.5"
 
 [lib]
 crate-type = ["dylib"]
