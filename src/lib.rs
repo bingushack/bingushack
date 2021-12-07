@@ -1,3 +1,5 @@
+mod ui;
+
 use winapi::um::processthreadsapi::CreateThread;
 use winapi::_core::ptr::null_mut;
 use winapi::um::libloaderapi::{FreeLibraryAndExitThread, DisableThreadLibraryCalls};
@@ -7,6 +9,8 @@ use winapi::shared::windef::HWND;
 use winapi::shared::minwindef::{LPVOID, DWORD, HINSTANCE};
 use winapi::um::handleapi::CloseHandle;
 use winapi::um::winnt::DLL_PROCESS_ATTACH;
+use crate::ui::debug_console::debug_console::run_debug_console;
+
 
 //todo macro for cstring
 
@@ -22,24 +26,30 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     //let jvm_handle = GetModuleHandleA(CString::new("jvm.dll").unwrap().as_ptr());
 
 
+    std::thread::spawn(|| {
+        run_debug_console();
+    });
+
+
     // this is ugly
     let mut hwnd: HWND = null_mut();
-
-    hwnd = FindWindowA(
-        null_mut(),
-        CString::new("Minecraft* 1.17.1").unwrap().as_ptr(),
-    );
-    if hwnd == null_mut() {
+    {
         hwnd = FindWindowA(
             null_mut(),
-            CString::new("Minecraft* 1.17.1 - Multiplayer (3rd-party Server)").unwrap().as_ptr(),
+            CString::new("Minecraft* 1.17.1").unwrap().as_ptr(),
         );
-    }
-    if hwnd == null_mut() {
-        hwnd = FindWindowA(
-            null_mut(),
-            CString::new("Minecraft* 1.17.1 - Singleplayer").unwrap().as_ptr(),
-        );
+        if hwnd == null_mut() {
+            hwnd = FindWindowA(
+                null_mut(),
+                CString::new("Minecraft* 1.17.1 - Multiplayer (3rd-party Server)").unwrap().as_ptr(),
+            );
+        }
+        if hwnd == null_mut() {
+            hwnd = FindWindowA(
+                null_mut(),
+                CString::new("Minecraft* 1.17.1 - Singleplayer").unwrap().as_ptr(),
+            );
+        }
     }
 
     loop {
@@ -87,7 +97,6 @@ pub extern "stdcall" fn DllMain(
     match fdw_reason {
         DLL_PROCESS_ATTACH => {
             unsafe {
-                DisableThreadLibraryCalls(hinst_dll);
                 let bingus_thread = CreateThread(
                     null_mut(),
                     0,
