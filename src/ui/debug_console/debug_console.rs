@@ -14,7 +14,7 @@ pub struct DebugConsole {
     window: Window,
 
     #[nwg_control(text: "close", size: (100, 45), position: (10, 40))]
-    #[nwg_events( OnButtonClick: [BasicApp::close] )]
+    #[nwg_events( OnButtonClick: [DebugConsole::close] )]
     close_button: Button
 }
 
@@ -27,11 +27,11 @@ impl DebugConsole {
 pub fn run_debug_console(rx: Receiver<Message>) -> u32 {
     nwg::init().unwrap();
 
-    let debug_console = DebugConsole::default();
+    let debug_console = DebugConsole::build_ui(Default::default()).unwrap();
 
     dispatch_thread_events();
 
-    dispatch_thread_events_with_callback(|| {
+    /*dispatch_thread_events_with_callback(move || {
         match rx.recv() {
             Ok(message) => match message {
                 Message::KillGUI => debug_console.close(),
@@ -39,7 +39,7 @@ pub fn run_debug_console(rx: Receiver<Message>) -> u32 {
             }
             Err(_) => {}
         }
-    });
+    });*/
 
     0
 }
