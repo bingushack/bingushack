@@ -1,41 +1,45 @@
-use eframe::{epi, egui};
-use eframe::egui::CtxRef;
-use eframe::epi::Frame;
+extern crate native_windows_derive as nwd;
 
-struct DebugConsole {
-    lines: Vec<String>,
+use std::sync::mpsc::{Sender, Receiver, RecvError};
+use crate::ui::debug_console::message::Message;
+
+use nwd::NwgUi;
+use nwg::{NativeUi, Window, Button, stop_thread_dispatch, dispatch_thread_events, dispatch_thread_events_with_callback};
+
+
+#[derive(Default, NwgUi)]
+pub struct DebugConsole {
+    #[nwg_control(size: (300, 125), position: (100, 100), title: "bingushack debug", flags: "WINDOW|VISIBLE")]
+    #[nwg_events( OnWindowClose: [DebugConsole::close] )]
+    window: Window,
+
+    #[nwg_control(text: "close", size: (100, 45), position: (10, 40))]
+    #[nwg_events( OnButtonClick: [BasicApp::close] )]
+    close_button: Button
 }
 
-impl Default for DebugConsole {
-    fn default() -> Self {
-        Self {
-            lines: Vec::new(),
+impl DebugConsole {
+    pub fn close(&self) {
+        stop_thread_dispatch();
+    }
+}
+
+pub fn run_debug_console(rx: Receiver<Message>) -> u32 {
+    nwg::init().unwrap();
+
+    let debug_console = DebugConsole::default();
+
+    dispatch_thread_events();
+
+    dispatch_thread_events_with_callback(|| {
+        match rx.recv() {
+            Ok(message) => match message {
+                Message::KillGUI => debug_console.close(),
+                _ => {},
+            }
+            Err(_) => {}
         }
-    }
-}
+    });
 
-impl epi::App for DebugConsole {
-    fn update(&mut self, ctx: &CtxRef, frame: &mut Frame<'_>) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            if ui.button("close console").clicked() {
-                frame.quit();
-            }
-            for line in &self.lines {
-                ui.label(line);
-            }
-        });
-
-        frame.set_window_size(ctx.used_size());
-    }
-
-    fn name(&self) -> &str {
-        "bingushack debug console"
-    }
-}
-
-
-
-pub fn run_debug_console() -> u32 {
-    let mut options = eframe::NativeOptions::default();
-    eframe::run_native(Box::new(DebugConsole::default()), options)
+    0
 }

@@ -8,10 +8,8 @@ edition = "2021"
 [dependencies]
 jni = "0.19.0"
 winapi = { version = "0.3.9", features = ["processthreadsapi", "libloaderapi", "winuser", "handleapi"] }
-eframe = "0.15.0"
-
-[patch.crates-io]
-eframe = { path = "./libs/egui/eframe" }
+nwg = { version = "^1.0.12", package = "native-windows-gui" }
+native-windows-derive = "1.0.3"
 
 [lib]
 crate-type = ["dylib"]

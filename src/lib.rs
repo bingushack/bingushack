@@ -3,7 +3,16 @@ mod ui;
 use winapi::um::processthreadsapi::CreateThread;
 use winapi::_core::ptr::null_mut;
 use winapi::um::libloaderapi::FreeLibraryAndExitThread;
-use winapi::um::winuser::{FindWindowA, VK_LEFT, MessageBoxA, MB_YESNOCANCEL, GetAsyncKeyState, VK_RIGHT, MB_OK, GetForegroundWindow};
+use winapi::um::winuser::{
+    FindWindowA,
+    VK_LEFT,
+    MessageBoxA,
+    MB_YESNOCANCEL,
+    GetAsyncKeyState,
+    VK_RIGHT,
+    MB_OK,
+    GetForegroundWindow
+};
 use std::ffi::CString;
 use winapi::shared::windef::HWND;
 use winapi::shared::minwindef::{LPVOID, DWORD, HINSTANCE};
@@ -12,6 +21,9 @@ use winapi::um::winnt::DLL_PROCESS_ATTACH;
 use crate::ui::debug_console::debug_console::run_debug_console;
 use std::thread::sleep;
 use std::time::Duration;
+use std::sync::mpsc;
+use std::sync::mpsc::{Sender, Receiver, TryRecvError};
+use crate::ui::debug_console::message::Message;
 
 #[cfg(target_os="windows")]
 
@@ -29,8 +41,33 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     //let jvm_handle = GetModuleHandleA(CString::new("jvm.dll").unwrap().as_ptr());
 
 
-    std::thread::spawn(|| {
-        run_debug_console();
+    let (tx, rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
+    let gui_thread = std::thread::spawn(move || {
+        let mut last_exit_code = u32::MAX;
+        let mut gui_alive = false;
+        'gui_thread: loop {
+            let (ttx, trx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
+            match rx.recv() {
+                Ok(message) => match message {
+                    Message::SpawnGUI => if !gui_alive {
+                        gui_alive = true;
+                        last_exit_code = run_debug_console(trx);
+                        gui_alive = false;
+                    },
+                    Message::KillGUI => {
+                        ttx.send(Message::KillGUI);
+                        gui_alive = false;
+                    },
+                    Message::KillThread => {
+                        ttx.send(Message::KillGUI);
+                        gui_alive = false;
+                        break 'gui_thread;
+                    },
+                }
+                Err(_) => {},
+            }
+        }
+        last_exit_code
     });
 
 
@@ -67,24 +104,21 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
             break;
         }
         if GetAsyncKeyState(VK_LEFT) & 0x01 == 1 {
-            MessageBoxA(
-                null_mut(),
-                CString::new("hello world!").unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_YESNOCANCEL,
-            );
+            tx.send(Message::SpawnGUI);
         }
     }
 
+    tx.send(Message::KillThread);
+    let eject_code = gui_thread.join().unwrap();
     MessageBoxA(
         null_mut(),
-        CString::new("close the clickgui to finish ejection").unwrap().as_ptr(),
+        CString::new("ejected").unwrap().as_ptr(),
         CString::new("bingushack").unwrap().as_ptr(),
         MB_OK,
     );
     FreeLibraryAndExitThread(
         base as _,
-        0
+        eject_code
     );
 
     unreachable!()
