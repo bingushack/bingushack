@@ -1,5 +1,5 @@
 pub enum Message {
-    KillGUI,
-    SpawnGUI,
+    SpawnDebugConsole,
+    SpawnGui,
     KillThread,
 }
