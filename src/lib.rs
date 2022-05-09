@@ -9,12 +9,14 @@ use std::ffi::CString;
 use winapi::shared::minwindef::{LPVOID, DWORD, HINSTANCE};
 use winapi::um::handleapi::CloseHandle;
 use winapi::um::winnt::DLL_PROCESS_ATTACH;
-use crate::ui::debug_console::run_debug_console;
+use crate::ui::debug_console::{init_debug_console, run_debug_console};
 use std::thread::sleep;
 use std::time::Duration;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 use ui::message::Message;
+use std::sync::{Arc, Mutex};
+use std::borrow::BorrowMut;
 
 #[cfg(target_os="windows")]
 
@@ -35,12 +37,19 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
 
     let (tx, rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
+    let mut debug_console_sender: Arc<Mutex<Option<Sender<String>>>> = Arc::new(Mutex::new(None));
     let clickgui_thread = std::thread::spawn(move || {
         loop {
             match rx.recv() {
                 Ok(message) => match message {
-                    Message::SpawnDebugConsole => run_debug_console(),
-                    Message::SpawnGui => run_debug_console(),
+                    Message::SpawnDebugConsole => {
+                        *debug_console_sender.borrow_mut() = Arc::new(Mutex::new(Some(init_debug_console())));
+                        run_debug_console();
+                    },
+                    Message::SpawnGui => {
+                        let sender = (*debug_console_sender).lock().unwrap();
+                        (*sender).as_ref().unwrap().send("spawn gui".to_string()).unwrap();
+                    },
                     Message::KillThread => break,
                 }
                 Err(_) => {},
