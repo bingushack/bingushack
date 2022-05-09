@@ -2,8 +2,8 @@ use super::epi;
 use egui_winit::{egui, native_pixels_per_point, WindowSettings, winit};
 use crate::ui::util::macros::*;
 
-pub fn points_to_size(points: egui::Vec2) -> winit::dpi::LogicalSize<f64> {
-    winit::dpi::LogicalSize {
+pub fn points_to_size(points: egui::Vec2) -> egui_winit::winit::dpi::LogicalSize<f64> {
+    egui_winit::winit::dpi::LogicalSize {
         width: points.x as f64,
         height: points.y as f64,
     }
@@ -344,5 +344,5 @@ fn prefer_dark_mode() -> Option<bool> {
 
 #[cfg(not(feature = "dark-light"))]
 fn prefer_dark_mode() -> Option<bool> {
-    None
+    Some(true)
 }

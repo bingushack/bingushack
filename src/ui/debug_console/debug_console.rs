@@ -1,6 +1,6 @@
 use std::sync::mpsc::{Receiver, Sender};
 use egui_winit::egui;
-use egui_winit::egui::Context;
+use egui_winit::egui::RichText;
 use crate::ui::util::{App, NativeOptions};
 use crate::ui::run;
 
@@ -19,32 +19,51 @@ pub fn run_debug_console() {
 }
 
 struct MyApp {
-    name: String,
-    age: u32,
+    my_string: String,
+    my_boolean: bool,
+    my_f32: f32,
 }
 
 impl Default for MyApp {
     fn default() -> Self {
         Self {
-            name: "Arthur".to_owned(),
-            age: 42,
+            my_string: "button text- edit me!".to_owned(),
+            my_boolean: false,
+            my_f32: 50.0,
         }
     }
 }
 
 impl App for MyApp {
-    fn update(&mut self, ctx: &Context, frame: &mut crate::ui::util::epi::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("My egui Application");
-            ui.horizontal(|ui| {
-                ui.label("Your name: ");
-                ui.text_edit_singleline(&mut self.name);
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut crate::ui::util::epi::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
+            ui.ctx().set_visuals(egui::Visuals::dark());  // might not be needed anymore
+
+
+            ui.label(RichText::new("Large and underlined").size(self.my_f32).underline());
+            ui.hyperlink("https://github.com/emilk/egui");
+            ui.text_edit_singleline(&mut self.my_string);
+            if ui.button((&mut self.my_string).as_str()).clicked() { }
+            ui.add(egui::Slider::new(&mut self.my_f32, 0.0..=100.0));
+            ui.add(egui::DragValue::new(&mut self.my_f32));
+
+            ui.checkbox(&mut self.my_boolean, "Checkbox");
+
+            /*ui.horizontal(|ui| {
+                ui.radio_value(&mut my_enum, MyEnum::First, "First");
+                ui.radio_value(&mut my_enum, MyEnum::Second, "Second");
+                ui.radio_value(&mut my_enum, MyEnum::Third, "Third");
+            });*/
+
+            ui.separator();
+
+            ui.collapsing("Click to see what is hidden!", |ui| {
+                ui.label("Not much, as it turns out");
             });
-            ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
-            if ui.button("Click each year").clicked() {
-                self.age += 1;
-            }
-            ui.label(format!("Hello '{}', age {}", self.name, self.age));
         });
     }
 }
+
+/*#[derive(PartialEq)]
+enum MyEnum { First, Second, Third }
+ */
