@@ -37,18 +37,27 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
 
     let (tx, rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
-    let mut debug_console_sender: Arc<Mutex<Option<Sender<String>>>> = Arc::new(Mutex::new(None));
     let clickgui_thread = std::thread::spawn(move || {
+        // todo: make so that if you spawn multiple debug consoles, they all receive the same messages
+        let mut debug_console_sender: Option<Sender<String>> = None;
+        let mut debug_console;
         loop {
             match rx.recv() {
                 Ok(message) => match message {
                     Message::SpawnDebugConsole => {
-                        *debug_console_sender.borrow_mut() = Arc::new(Mutex::new(Some(init_debug_console())));
-                        run_debug_console();
+                        let tmp = init_debug_console();
+                        debug_console = tmp.0;
+                        debug_console_sender = Some(tmp.1);
+                        let dbg = std::thread::spawn(move || {
+                            run_debug_console(debug_console);
+                        });
                     },
                     Message::SpawnGui => {
-                        let sender = (*debug_console_sender).lock().unwrap();
-                        (*sender).as_ref().unwrap().send("spawn gui".to_string()).unwrap();
+                        // send message "spawn gui" to debug console with debug_console_sender
+                        // will eventually spawn the proper clickgui
+                        if let Some(sender) = debug_console_sender.clone() {
+                            sender.send(String::from("spawn gui")).unwrap();
+                        }
                     },
                     Message::KillThread => break,
                 }

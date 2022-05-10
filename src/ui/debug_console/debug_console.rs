@@ -2,66 +2,46 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use eframe::egui;
 
-pub fn init_debug_console() -> Sender<String> {
+pub fn init_debug_console() -> (DebugConsole, Sender<String>) {
     let (tx, rx) = std::sync::mpsc::channel();
-    tx
+    (DebugConsole::new(rx), tx)
 }
 
-pub fn run_debug_console() {
+pub fn run_debug_console(app: DebugConsole) {
     let options = eframe::NativeOptions::default();
     eframe::run_native(
         "My egui App",
         options,
-        Box::new(|_cc| Box::new(MyApp::default())),
+        Box::new(|_cc| Box::new(app)),
     );
 }
 
-struct MyApp {
-    my_string: String,
-    my_boolean: bool,
-    my_f32: f32,
+pub struct DebugConsole {
+    text: Vec<String>,
+    rx: Receiver<String>,
 }
 
-impl Default for MyApp {
-    fn default() -> Self {
+impl DebugConsole {
+    pub fn new(rx: Receiver<String>) -> Self {
         Self {
-            my_string: "button text- edit me!".to_owned(),
-            my_boolean: false,
-            my_f32: 50.0,
+            text: vec![String::from("start")],
+            rx,
         }
     }
 }
 
-impl eframe::App for MyApp {
+impl eframe::App for DebugConsole {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
-            ui.ctx().set_visuals(egui::Visuals::dark());  // might not be needed anymore
+            if let Ok(text) = self.rx.try_recv() {
+                self.text.push(text);
+            }
 
-
-            ui.label(egui::RichText::new("Large and underlined").size(self.my_f32).underline());
-            ui.hyperlink("https://github.com/emilk/egui");
-            ui.text_edit_singleline(&mut self.my_string);
-            if ui.button((&mut self.my_string).as_str()).clicked() { }
-            ui.add(egui::Slider::new(&mut self.my_f32, 0.0..=100.0));
-            ui.add(egui::DragValue::new(&mut self.my_f32));
-
-            ui.checkbox(&mut self.my_boolean, "Checkbox");
-
-            /*ui.horizontal(|ui| {
-                ui.radio_value(&mut my_enum, MyEnum::First, "First");
-                ui.radio_value(&mut my_enum, MyEnum::Second, "Second");
-                ui.radio_value(&mut my_enum, MyEnum::Third, "Third");
-            });*/
+            ui.hyperlink("https://github.com/bingushack/bingushack");
 
             ui.separator();
 
-            ui.collapsing("Click to see what is hidden!", |ui| {
-                ui.label("Not much, as it turns out");
-            });
+            ui.label(self.text.join("\n"));
         });
     }
 }
-
-/*#[derive(PartialEq)]
-enum MyEnum { First, Second, Third }
- */
