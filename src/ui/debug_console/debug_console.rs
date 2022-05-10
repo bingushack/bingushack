@@ -1,8 +1,6 @@
 use std::sync::mpsc::{Receiver, Sender};
-use egui_winit::egui;
-use egui_winit::egui::RichText;
-use crate::ui::util::{App, NativeOptions};
-use crate::ui::run;
+
+use eframe::egui;
 
 pub fn init_debug_console() -> Sender<String> {
     let (tx, rx) = std::sync::mpsc::channel();
@@ -10,10 +8,10 @@ pub fn init_debug_console() -> Sender<String> {
 }
 
 pub fn run_debug_console() {
-    let options = NativeOptions::default();
-    run(
+    let options = eframe::NativeOptions::default();
+    eframe::run_native(
         "My egui App",
-        &options,
+        options,
         Box::new(|_cc| Box::new(MyApp::default())),
     );
 }
@@ -34,13 +32,13 @@ impl Default for MyApp {
     }
 }
 
-impl App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut crate::ui::util::epi::Frame) {
+impl eframe::App for MyApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
             ui.ctx().set_visuals(egui::Visuals::dark());  // might not be needed anymore
 
 
-            ui.label(RichText::new("Large and underlined").size(self.my_f32).underline());
+            ui.label(egui::RichText::new("Large and underlined").size(self.my_f32).underline());
             ui.hyperlink("https://github.com/emilk/egui");
             ui.text_edit_singleline(&mut self.my_string);
             if ui.button((&mut self.my_string).as_str()).clicked() { }
