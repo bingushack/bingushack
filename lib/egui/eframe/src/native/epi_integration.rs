@@ -335,13 +335,10 @@ pub fn load_egui_memory(_storage: Option<&dyn epi::Storage>) -> Option<egui::Mem
 
 #[cfg(feature = "dark-light")]
 fn prefer_dark_mode() -> Option<bool> {
-    match dark_light::detect() {
-        dark_light::Mode::Dark => Some(true),
-        dark_light::Mode::Light => Some(false),
-    }
+    Some(true)
 }
 
 #[cfg(not(feature = "dark-light"))]
 fn prefer_dark_mode() -> Option<bool> {
-    None
+    Some(true)
 }
