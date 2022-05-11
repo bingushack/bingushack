@@ -10,6 +10,7 @@ use winapi::shared::minwindef::{LPVOID, DWORD, HINSTANCE};
 use winapi::um::handleapi::CloseHandle;
 use winapi::um::winnt::DLL_PROCESS_ATTACH;
 use crate::ui::debug_console::{init_debug_console, run_debug_console};
+use crate::ui::clickgui::{init_clickgui, run_clickgui, ClickGuiMessage};
 use std::thread::sleep;
 use std::time::Duration;
 use std::sync::mpsc;
@@ -36,11 +37,20 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     //let jvm_handle = GetModuleHandleA(CString::new("jvm.dll").unwrap().as_ptr());
 
 
+    // after clickgui is enabled, you can use tx_clickgui to send messages from the clickgui
+    // and rx_clickgui to receive messages from the clickgui
+    let (mut tx_clickgui, rx_clickgui): (Sender<ClickGuiMessage>,  Arc<Mutex<Receiver<ClickGuiMessage>>>) = {
+        let (tx, rx) = mpsc::channel();
+        (tx, Arc::new(Mutex::new(rx)))
+    };
+
+    // channel to send and recieve messages involving the thread for the guis
     let (tx, rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
     let clickgui_thread = std::thread::spawn(move || {
         // todo: make so that if you spawn multiple debug consoles, they all receive the same messages
         let mut debug_console_sender: Option<Sender<String>> = None;
         let mut debug_console;
+        let mut clickgui;
         loop {
             match rx.recv() {
                 Ok(message) => match message {
@@ -48,16 +58,22 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                         let tmp = init_debug_console();
                         debug_console = tmp.0;
                         debug_console_sender = Some(tmp.1);
-                        let dbg = std::thread::spawn(move || {
+                        std::thread::spawn(move || {
                             run_debug_console(debug_console);
                         });
                     },
                     Message::SpawnGui => {
                         // send message "spawn gui" to debug console with debug_console_sender
-                        // will eventually spawn the proper clickgui
+                        // spawns the proper clickgui as well
                         if let Some(sender) = debug_console_sender.clone() {
                             sender.send(String::from("spawn gui")).unwrap();
                         }
+
+                        (clickgui, tx_clickgui) = init_clickgui(tx_clickgui);
+
+                        std::thread::spawn(move || {
+                            run_clickgui(clickgui);
+                        });
                     },
                     Message::KillThread => break,
                 }
