@@ -10,7 +10,7 @@ pub fn init_debug_console() -> (DebugConsole, Sender<String>) {
 pub fn run_debug_console(app: DebugConsole) {
     let options = eframe::NativeOptions::default();
     eframe::run_native(
-        "My egui App",
+        "bingushack debug",
         options,
         Box::new(|_cc| Box::new(app)),
     );
@@ -34,7 +34,7 @@ impl eframe::App for DebugConsole {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
             if let Ok(text) = self.rx.try_recv() {
-                self.text.push(text);
+                self.text.insert(0, text);
             }
 
             ui.hyperlink("https://github.com/bingushack/bingushack");
