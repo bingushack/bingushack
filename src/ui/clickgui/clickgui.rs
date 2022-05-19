@@ -1,11 +1,12 @@
 use std::sync::mpsc::{Receiver, Sender};
 use super::clickgui_message::ClickGuiMessage;
+use crate::client::Client;
 
 use eframe::egui;
 
-pub fn init_clickgui(tx: Sender<ClickGuiMessage>) -> (ClickGui, Sender<ClickGuiMessage>) {
+pub fn init_clickgui() -> (ClickGui, Sender<ClickGuiMessage>) {
     let (ntx, nrx) = std::sync::mpsc::channel();
-    (ClickGui::new(nrx, tx), ntx)
+    (ClickGui::new(nrx), ntx)
 }
 
 pub fn run_clickgui(app: ClickGui) {
@@ -19,15 +20,25 @@ pub fn run_clickgui(app: ClickGui) {
 
 pub struct ClickGui {
     rx: Receiver<ClickGuiMessage>,
-    tx: Sender<ClickGuiMessage>,
+
+    // sender to the client itself
+    client_sender: Sender<ClickGuiMessage>,
+    client: Client,
 }
 
 impl ClickGui {
-    pub fn new(rx: Receiver<ClickGuiMessage>, tx: Sender<ClickGuiMessage>) -> Self {
+    pub fn new(rx: Receiver<ClickGuiMessage>) -> Self {
+        let (client_sender, client_receiver) = std::sync::mpsc::channel();
+        let client = Client::new(client_receiver, client_sender.clone());
         Self {
             rx,
-            tx,
+            client_sender,
+            client,
         }
+    }
+
+    pub fn get_client_sender(&self) -> Sender<ClickGuiMessage> {
+        self.client_sender.clone()
     }
 }
 
@@ -42,6 +53,12 @@ impl eframe::App for ClickGui {
                     _ => {}
                 }
             }
+
+            if ui.button("do a thing").clicked() {
+                self.client_sender.send(ClickGuiMessage::Dev("Hello world!".to_string())).unwrap();
+            }
         });
     }
 }
+
+// unsafe impl<'c> Send for ClickGui<'c> {}

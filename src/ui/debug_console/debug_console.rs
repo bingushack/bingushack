@@ -4,7 +4,7 @@ use eframe::egui;
 
 pub fn init_debug_console() -> (DebugConsole, Sender<String>) {
     let (tx, rx) = std::sync::mpsc::channel();
-    (DebugConsole::new(rx), tx)
+    (DebugConsole::new(rx, tx.clone()), tx)
 }
 
 pub fn run_debug_console(app: DebugConsole) {
@@ -19,13 +19,15 @@ pub fn run_debug_console(app: DebugConsole) {
 pub struct DebugConsole {
     text: Vec<String>,
     rx: Receiver<String>,
+    tx: Sender<String>,
 }
 
 impl DebugConsole {
-    pub fn new(rx: Receiver<String>) -> Self {
+    pub fn new(rx: Receiver<String>, tx: Sender<String>,) -> Self {
         Self {
             text: vec![String::from("start")],
             rx,
+            tx,
         }
     }
 }

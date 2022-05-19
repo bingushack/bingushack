@@ -34,23 +34,22 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
         MB_OK,
     );
 
-    //let jvm_handle = GetModuleHandleA(CString::new("jvm.dll").unwrap().as_ptr());
 
 
-    // after clickgui is enabled, you can use tx_clickgui to send messages from the clickgui
-    // and rx_clickgui to receive messages from the clickgui
-    let (mut tx_clickgui, rx_clickgui): (Sender<ClickGuiMessage>,  Arc<Mutex<Receiver<ClickGuiMessage>>>) = {
-        let (tx, rx) = mpsc::channel();
-        (tx, Arc::new(Mutex::new(rx)))
-    };
 
     // channel to send and recieve messages involving the thread for the guis
     let (tx, rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
     let clickgui_thread = std::thread::spawn(move || {
+        // after clickgui is enabled, you can use tx_clickgui to send messages to the clickgui
+        // and rx_clickgui to receive messages from the clickgui
+        let (tx_clickgui, rx_clickgui): (Arc<Mutex<Sender<ClickGuiMessage>>>,  Arc<Mutex<Receiver<ClickGuiMessage>>>) = {
+            let (tx, rx) = mpsc::channel();
+            (Arc::new(Mutex::new(tx)), Arc::new(Mutex::new(rx)))
+        };
+        
         // todo: make so that if you spawn multiple debug consoles, they all receive the same messages
         let mut debug_console_sender: Option<Sender<String>> = None;
         let mut debug_console;
-        let mut clickgui;
         loop {
             match rx.recv() {
                 Ok(message) => match message {
@@ -69,10 +68,23 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                             sender.send(String::from("spawn gui")).unwrap();
                         }
 
-                        (clickgui, tx_clickgui) = init_clickgui(tx_clickgui);
+
+                        //let mut inner_tx_clickgui = tx_clickgui.clone();
+
+
+                        // let tmp = init_clickgui();
+
+                        //*inner_tx_clickgui.lock().unwrap() = tmp.1;
 
                         std::thread::spawn(move || {
-                            run_clickgui(clickgui);
+                            let client = init_clickgui().0;
+                            MessageBoxA(
+                                null_mut(),
+                                CString::new("a").unwrap().as_ptr(),
+                                CString::new("bingushack").unwrap().as_ptr(),
+                                MB_OK,
+                            );
+                            run_clickgui(client);
                         });
                     },
                     Message::KillThread => break,
@@ -112,6 +124,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
         }
 
 
+        // todo: invalidate these if the clickgui has panicked
         if GetAsyncKeyState(VK_LEFT) & 0x01 == 1 {
             tx.send(Message::SpawnDebugConsole).unwrap();
         }
