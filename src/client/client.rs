@@ -10,7 +10,6 @@ use std::collections::HashMap;
 use std::sync::mpsc::{Sender, Receiver};
 use super::mapping::MappingsManager;
 use crate::ClickGuiMessage;
-use crate::{MB_OK, CString, null_mut, MessageBoxA};
 
 
 pub struct Client {
@@ -35,24 +34,9 @@ impl Client {
                 CString::new("JNI_GetCreatedJavaVMs").unwrap().as_ptr(),
             ) as *mut _;
 
-            MessageBoxA(
-                null_mut(),
-                CString::new("1").unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_OK,
-            );
-
             let jvm = JavaVM::from_raw(*jvm).unwrap();
             jvm
         };
-        unsafe {
-            MessageBoxA(
-                null_mut(),
-                CString::new("2").unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_OK,
-            );
-        }
         Client {
             rx,
             tx,
