@@ -24,7 +24,8 @@ use std::borrow::BorrowMut;
 //todo macro for cstring
 
 
-unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
+#[no_mangle]
+pub unsafe extern "stdcall" fn main_loop(base: LPVOID) -> u32 {
 
 
     MessageBoxA(
@@ -101,18 +102,18 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     {
         hwnd = FindWindowA(
             null_mut(),
-            CString::new("Minecraft* 1.17.1").unwrap().as_ptr(),
+            CString::new("Minecraft* 1.18.2").unwrap().as_ptr(),
         );
         if hwnd == null_mut() {
             hwnd = FindWindowA(
                 null_mut(),
-                CString::new("Minecraft* 1.17.1 - Multiplayer (3rd-party Server)").unwrap().as_ptr(),
+                CString::new("Minecraft* 1.18.2 - Multiplayer (3rd-party Server)").unwrap().as_ptr(),
             );
         }
         if hwnd == null_mut() {
             hwnd = FindWindowA(
                 null_mut(),
-                CString::new("Minecraft* 1.17.1 - Singleplayer").unwrap().as_ptr(),
+                CString::new("Minecraft* 1.18.2 - Singleplayer").unwrap().as_ptr(),
             );
         }
     }

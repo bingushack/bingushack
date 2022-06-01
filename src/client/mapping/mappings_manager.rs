@@ -23,7 +23,7 @@ impl MappingsManager{
         // see https://github.com/UnknownDetectionParty/UDP-CPP/blob/018233f85f81ac0c2f7ccd780844be8a8102d39a/UDP/mapping/Mapping.h#L31
 
         {
-            let class_name = "TitleScreen".to_string();
+            let class_name =  "net/minecraft/client/gui/screen/TitleScreen".to_string();
             let mut title_screen_cm = Self::make(class_name.clone(), "class_442".to_string());
             Self::add_obf_field(
                 &mut title_screen_cm,

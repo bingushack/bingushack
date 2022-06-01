@@ -56,6 +56,7 @@ impl eframe::App for ClickGui {
 
             if ui.button("do a thing").clicked() {
                 self.client_sender.send(ClickGuiMessage::Dev("Hello world!".to_string())).unwrap();
+                self.client.client_tick();
             }
         });
     }

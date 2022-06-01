@@ -1,20 +1,7 @@
 mod mappings_manager;
 
 pub use self::mappings_manager::MappingsManager;
-use jni::objects::{JClass, JFieldID, JMethodID, JStaticFieldID, JStaticMethodID};
 
-
-#[repr(C)]
-pub union BingusJFieldID<'a> {
-    pub normal_field: JFieldID<'a>,
-    pub static_field: JStaticFieldID<'a>,
-}
-
-#[repr(C)]
-pub union BingusJMethodID<'a> {
-    pub normal_method: JMethodID<'a>,
-    pub static_method: JStaticMethodID<'a>,
-}
 
 use std::collections::HashMap;
 
@@ -57,11 +44,11 @@ impl Mem {
         self.is_static
     }
 
-    pub fn get_description(&self) -> &str {
-        &self.description
+    pub fn get_description(&self) -> String {
+        self.description.clone()
     }
 
-    pub fn get_name(&self) -> &str {
-        &self.name
+    pub fn get_name(&self) -> String {
+        self.name.clone()
     }
 }
