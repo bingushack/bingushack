@@ -24,8 +24,8 @@ use std::borrow::BorrowMut;
 //todo macro for cstring
 
 
-#[no_mangle]
-pub unsafe extern "stdcall" fn main_loop(base: LPVOID) -> u32 {
+
+unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
 
     MessageBoxA(
