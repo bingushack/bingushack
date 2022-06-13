@@ -82,12 +82,8 @@ impl<'j> Client {
 
         let jvm: JavaVM = unsafe {
             use winapi::um::libloaderapi::{GetProcAddress, GetModuleHandleA};
-            use jni::sys::JNI_GetCreatedJavaVMs;
+            use jni::sys::{JNI_GetCreatedJavaVMs, JNIInvokeInterface_};
 
-            /*let jvm = GetProcAddress(
-                GetModuleHandleA(CString::new("jvm.dll").unwrap().as_ptr()),
-                CString::new("JNI_GetCreatedJavaVMs").unwrap().as_ptr(),
-            ) as *mut _;*/
 
             MessageBoxA(
                 null_mut(),
@@ -96,9 +92,10 @@ impl<'j> Client {
                 MB_OK,
             );
 
-            let jvm_ptr = null_mut();
+            let jvm_ptr = Vec::with_capacity(1).as_mut_ptr();
+            let count = null_mut();
 
-            JNI_GetCreatedJavaVMs(jvm_ptr, 1, null_mut());
+            JNI_GetCreatedJavaVMs(jvm_ptr, 1, count);
 
             MessageBoxA(
                 null_mut(),
@@ -107,7 +104,8 @@ impl<'j> Client {
                 MB_OK,
             );
 
-            let jvm = JavaVM::from_raw(*jvm_ptr).unwrap();
+            let jvm_env = null_mut();
+            (***jvm_ptr).GetEnv.unwrap()(*jvm_ptr, jvm_env, 17);
 
             MessageBoxA(
                 null_mut(),
@@ -116,7 +114,10 @@ impl<'j> Client {
                 MB_OK,
             );
 
-            jvm
+            JNIEnv::from_raw(std::mem::transmute::<
+                *mut std::ffi::c_void,
+                *mut *const jni::sys::JNINativeInterface_
+            >(*jvm_env)).unwrap().get_java_vm().unwrap()
         };
         unsafe {
             MessageBoxA(
