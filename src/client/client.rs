@@ -81,61 +81,14 @@ impl<'j> Client {
         
 
         let jvm: JavaVM = unsafe {
-            use winapi::um::libloaderapi::{GetProcAddress, GetModuleHandleA};
-            use jni::sys::{JNI_GetCreatedJavaVMs, JNIInvokeInterface_};
-
-
-            MessageBoxA(
-                null_mut(),
-                CString::new("-3").unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_OK,
-            );
+            use jni::sys::JNI_GetCreatedJavaVMs;
 
             let jvm_ptr = Vec::with_capacity(1).as_mut_ptr();
-            let count = null_mut();
+            JNI_GetCreatedJavaVMs(jvm_ptr, 1, null_mut());
 
-            JNI_GetCreatedJavaVMs(jvm_ptr, 1, count);
-
-            MessageBoxA(
-                null_mut(),
-                CString::new("-2").unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_OK,
-            );
-
-            let jvm_env = null_mut();
-            (***jvm_ptr).GetEnv.unwrap()(*jvm_ptr, jvm_env, 17);
-
-            MessageBoxA(
-                null_mut(),
-                CString::new("-1").unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_OK,
-            );
-
-            JNIEnv::from_raw(std::mem::transmute::<
-                *mut std::ffi::c_void,
-                *mut *const jni::sys::JNINativeInterface_
-            >(*jvm_env)).unwrap().get_java_vm().unwrap()
+            JavaVM::from_raw(*jvm_ptr).unwrap()
         };
-        unsafe {
-            MessageBoxA(
-                null_mut(),
-                CString::new("0").unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_OK,
-            );
-        }
         jvm.attach_current_thread_as_daemon().unwrap();
-        unsafe {
-            MessageBoxA(
-                null_mut(),
-                CString::new("1").unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_OK,
-            );
-        }
         Client {
             rx,
             tx,
@@ -150,33 +103,33 @@ impl<'j> Client {
 
     pub fn client_tick(&mut self) {
         if let Ok(message) = self.rx.try_recv() {
-            unsafe {
-                MessageBoxA(
-                null_mut(),
-                CString::new("a").unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_OK,
-                );
-            }
-
             let env = self.jvm.get_env().unwrap();
-
-            unsafe {
-                MessageBoxA(
-                null_mut(),
-                CString::new("b").unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_OK,
-                );
-            }
 
             match message {
                 ClickGuiMessage::Dev(text) => {
+                    unsafe {
+                        MessageBoxA(
+                        null_mut(),
+                        CString::new("a1").unwrap().as_ptr(),
+                        CString::new("bingushack").unwrap().as_ptr(),
+                        MB_OK,
+                        );
+                    }
                     // set splash screen text to "Hello world!"
                     // TitleScreen is in the package net.minecraft.client.gui.screen.TitleScreen
                     //let title_screen_class = env.find_class().unwrap();
                 
                     let clazz = env.find_class("net/minecraft/client/gui/screen/TitleScreen").unwrap();
+
+                    unsafe {
+                        MessageBoxA(
+                        null_mut(),
+                        CString::new("b1").unwrap().as_ptr(),
+                        CString::new("bingushack").unwrap().as_ptr(),
+                        MB_OK,
+                        );
+                    }
+
                     let fid = self.get_field_id(
                         "net/minecraft/client/gui/screen/TitleScreen".to_string(),
                         "splashText".to_string(),

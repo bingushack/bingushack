@@ -79,12 +79,6 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
                         std::thread::spawn(move || {
                             let client = init_clickgui().0;
-                            MessageBoxA(
-                                null_mut(),
-                                CString::new("b").unwrap().as_ptr(),
-                                CString::new("bingushack").unwrap().as_ptr(),
-                                MB_OK,
-                            );
                             run_clickgui(client);
                         });
                     },
