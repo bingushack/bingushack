@@ -6,7 +6,7 @@ pub use self::mappings_manager::MappingsManager;
 use std::collections::HashMap;
 
 pub struct CM {
-    name: String,
+    name: String,  // obfuscated class name
     fields: HashMap<String, Mem>,
     methods: HashMap<String, Mem>,
 }

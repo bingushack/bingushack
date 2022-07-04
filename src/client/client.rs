@@ -75,6 +75,8 @@ pub struct Client {
     cm_lookup: MappingsManager,
 }
 
+
+// todo clean up all the get_env() calls
 impl<'j> Client {
     pub fn new(rx: Receiver<ClickGuiMessage>, tx: Sender<ClickGuiMessage>) -> Self {
         // something in here is broken
@@ -116,10 +118,11 @@ impl<'j> Client {
                         );
                     }
                     // set splash screen text to "Hello world!"
-                    // TitleScreen is in the package net.minecraft.client.gui.screen.TitleScreen
-                    //let title_screen_class = env.find_class().unwrap();
-                
-                    let clazz = env.find_class("net/minecraft/client/gui/screen/TitleScreen").unwrap();
+
+                    let fid = self.get_field_id(
+                        "TitleScreen".to_string(),
+                        "splashText".to_string(),
+                    );
 
                     unsafe {
                         MessageBoxA(
@@ -130,13 +133,8 @@ impl<'j> Client {
                         );
                     }
 
-                    let fid = self.get_field_id(
-                        "net/minecraft/client/gui/screen/TitleScreen".to_string(),
-                        "splashText".to_string(),
-                    );
-
                     env.set_field(
-                        clazz,
+                        self.get_class_obj("TitleScreen".to_string()),
                         "splashText".to_string(),
                         "Ljava/lang/String;",
                         JValue::Object(*env.new_string(text).unwrap()),
@@ -157,21 +155,49 @@ impl<'j> Client {
         &self.cm_lookup.get_hashmap()
     }
 
+    fn get_class_obj(&'j self, class_name: String) -> JClass<'j> {
+        let obf_class_name = self.get_class(class_name).get_name();
+        self.get_env().find_class(obf_class_name).unwrap()
+    }
+
     fn get_class(&self, key: String) -> &CM {
         self.get_cm_lookup().get(&key).unwrap()
     }
 
+    fn get_class_loader(&'j self) -> JClass<'j> {
+        env.find_class("java/lang/ClassLoader").unwrap()
+    }
+
     fn get_field_id(&'j self, class_name: String, name: String) -> BingusJFieldID<'j> {
         let cm = self.get_class(class_name);
-        let field: &Mem = cm.get_fields().get(&name).unwrap();
+        let obf_class_name = cm.get_name();
+        let field: &Mem = cm.get_field(&name);
         let env = self.get_env();
+        unsafe {
+            MessageBoxA(
+            null_mut(),
+            CString::new("f1").unwrap().as_ptr(),
+            CString::new("bingushack").unwrap().as_ptr(),
+            MB_OK,
+            );
+        }  // runs
+
+        unsafe {
+            MessageBoxA(
+                null_mut(),
+                CString::new(format!("obf_class_name:{},field_name:{},field_type:{}", obf_class_name, field.get_name(), field.get_description())).unwrap().as_ptr(),
+                CString::new("bingushack").unwrap().as_ptr(),
+                MB_OK,
+            );
+        }
+        // something in here breaks
         if field.is_static() {
             BingusJFieldID { static_field: ManuallyDrop::new(
-                env.get_static_field_id(self.get_class(name.clone()).get_name(), name, field.get_description()).unwrap()
+                env.get_static_field_id(obf_class_name, field.get_name(), field.get_description()).unwrap()
             ) }
         } else {
             BingusJFieldID { normal_field: ManuallyDrop::new(
-                env.get_field_id(self.get_class(name.clone()).get_name(), name, field.get_description()).unwrap()
+                env.get_field_id(obf_class_name, field.get_name(), field.get_description()).unwrap()
             ) }
         }
     }
