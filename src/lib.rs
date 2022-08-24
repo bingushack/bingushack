@@ -10,6 +10,7 @@ use winapi::shared::minwindef::{LPVOID, DWORD, HINSTANCE};
 use winapi::um::handleapi::CloseHandle;
 use winapi::um::winnt::DLL_PROCESS_ATTACH;
 use crate::ui::debug_console::{init_debug_console, run_debug_console};
+use crate::ui::clickgui::{init_clickgui, run_clickgui, ClickGuiMessage};
 use std::thread::sleep;
 use std::time::Duration;
 use std::sync::mpsc;
@@ -23,6 +24,7 @@ use std::borrow::BorrowMut;
 //todo macro for cstring
 
 
+
 unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
 
@@ -33,11 +35,19 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
         MB_OK,
     );
 
-    //let jvm_handle = GetModuleHandleA(CString::new("jvm.dll").unwrap().as_ptr());
 
 
+
+    // channel to send and recieve messages involving the thread for the guis
     let (tx, rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
     let clickgui_thread = std::thread::spawn(move || {
+        // after clickgui is enabled, you can use tx_clickgui to send messages to the clickgui
+        // and rx_clickgui to receive messages from the clickgui
+        let (tx_clickgui, rx_clickgui): (Arc<Mutex<Sender<ClickGuiMessage>>>,  Arc<Mutex<Receiver<ClickGuiMessage>>>) = {
+            let (tx, rx) = mpsc::channel();
+            (Arc::new(Mutex::new(tx)), Arc::new(Mutex::new(rx)))
+        };
+        
         // todo: make so that if you spawn multiple debug consoles, they all receive the same messages
         let mut debug_console_sender: Option<Sender<String>> = None;
         let mut debug_console;
@@ -48,16 +58,29 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                         let tmp = init_debug_console();
                         debug_console = tmp.0;
                         debug_console_sender = Some(tmp.1);
-                        let dbg = std::thread::spawn(move || {
+                        std::thread::spawn(move || {
                             run_debug_console(debug_console);
                         });
                     },
                     Message::SpawnGui => {
                         // send message "spawn gui" to debug console with debug_console_sender
-                        // will eventually spawn the proper clickgui
+                        // spawns the proper clickgui as well
                         if let Some(sender) = debug_console_sender.clone() {
                             sender.send(String::from("spawn gui")).unwrap();
                         }
+
+
+                        //let mut inner_tx_clickgui = tx_clickgui.clone();
+
+
+                        // let tmp = init_clickgui();
+
+                        //*inner_tx_clickgui.lock().unwrap() = tmp.1;
+
+                        std::thread::spawn(move || {
+                            let client = init_clickgui().0;
+                            run_clickgui(client);
+                        });
                     },
                     Message::KillThread => break,
                 }
@@ -73,18 +96,18 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     {
         hwnd = FindWindowA(
             null_mut(),
-            CString::new("Minecraft* 1.17.1").unwrap().as_ptr(),
+            CString::new("Minecraft 1.18.2").unwrap().as_ptr(),
         );
         if hwnd == null_mut() {
             hwnd = FindWindowA(
                 null_mut(),
-                CString::new("Minecraft* 1.17.1 - Multiplayer (3rd-party Server)").unwrap().as_ptr(),
+                CString::new("Minecraft 1.18.2 - Multiplayer (3rd-party Server)").unwrap().as_ptr(),
             );
         }
         if hwnd == null_mut() {
             hwnd = FindWindowA(
                 null_mut(),
-                CString::new("Minecraft* 1.17.1 - Singleplayer").unwrap().as_ptr(),
+                CString::new("Minecraft 1.18.2 - Singleplayer").unwrap().as_ptr(),
             );
         }
     }
@@ -96,6 +119,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
         }
 
 
+        // todo: invalidate these if the clickgui has panicked
         if GetAsyncKeyState(VK_LEFT) & 0x01 == 1 {
             tx.send(Message::SpawnDebugConsole).unwrap();
         }

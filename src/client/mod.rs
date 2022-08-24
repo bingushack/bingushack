@@ -1,5 +1,9 @@
 mod module;
 mod setting;
+mod client;
+mod mapping;
 
-pub use self::module::*;
-pub use self::setting::*;
+pub use self::client::*;
+
+pub fn run_client(client: Client) {
+}
