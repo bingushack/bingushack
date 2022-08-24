@@ -1,3 +1,5 @@
+#[allow(non_snake_case)]
+
 use jni::{
     JNIEnv, 
     JavaVM,
@@ -14,7 +16,8 @@ use crate::ClickGuiMessage;
 use crate::client::mapping::*;
 use std::ffi::CString;
 use std::mem::ManuallyDrop;
-use jni::objects::{JClass, JFieldID, JMethodID, JStaticFieldID, JStaticMethodID};
+use jni::objects::{JString, JObject, JClass, JFieldID, JMethodID, JStaticFieldID, JStaticMethodID};
+use jni::signature::JavaType;
 
 use crate::{
     MB_OK,
@@ -77,12 +80,9 @@ pub struct Client {
 
 
 // todo clean up all the get_env() calls
-impl<'j> Client {
+impl Client {
     pub fn new(rx: Receiver<ClickGuiMessage>, tx: Sender<ClickGuiMessage>) -> Self {
-        // something in here is broken
-        
-
-        let jvm: JavaVM = unsafe {
+        let java_vm: JavaVM = unsafe {
             use jni::sys::JNI_GetCreatedJavaVMs;
 
             let jvm_ptr = Vec::with_capacity(1).as_mut_ptr();
@@ -90,55 +90,45 @@ impl<'j> Client {
 
             JavaVM::from_raw(*jvm_ptr).unwrap()
         };
-        jvm.attach_current_thread_as_daemon().unwrap();
+        java_vm.attach_current_thread_as_daemon().unwrap();
         Client {
             rx,
             tx,
 
-            jvm,
+            jvm: java_vm,
 
             cm_lookup: MappingsManager::new(),
         }
     }
 
-    
+    fn get_jni_env(&self) -> JNIEnv<'_> {
+        self.jvm.get_env().unwrap()
+    }
 
     pub fn client_tick(&mut self) {
         if let Ok(message) = self.rx.try_recv() {
-            let env = self.jvm.get_env().unwrap();
-
             match message {
                 ClickGuiMessage::Dev(text) => {
-                    unsafe {
-                        MessageBoxA(
-                        null_mut(),
-                        CString::new("a1").unwrap().as_ptr(),
-                        CString::new("bingushack").unwrap().as_ptr(),
-                        MB_OK,
-                        );
-                    }
-                    // set splash screen text to "Hello world!"
+                    let env = self.get_jni_env();
 
-                    let fid = self.get_field_id(
-                        "TitleScreen".to_string(),
-                        "splashText".to_string(),
-                    );
+                    let minecraft_client_class: JClass<'_> = env.find_class("dyr").unwrap();
 
-                    unsafe {
-                        MessageBoxA(
-                        null_mut(),
-                        CString::new("b1").unwrap().as_ptr(),
-                        CString::new("bingushack").unwrap().as_ptr(),
-                        MB_OK,
-                        );
-                    }
+                    let minecraft_client_object: JObject<'_> = env
+                        .call_static_method(minecraft_client_class, "D", "()Ldyr;", &[])
+                        .unwrap()
+                        .l()
+                        .unwrap();
 
-                    env.set_field(
-                        self.get_class_obj("TitleScreen".to_string()),
-                        "splashText".to_string(),
-                        "Ljava/lang/String;",
-                        JValue::Object(*env.new_string(text).unwrap()),
-                    ).unwrap();
+
+                    let player = env
+                        .get_field(minecraft_client_object, "s", "Lepw;")
+                        .unwrap()
+                        .l()
+                        .unwrap();
+
+
+                    // send `text` in chat
+                    env.call_method(player, "e", "(Ljava/lang/String;)V", &[JValue::from(env.new_string(text).unwrap())]);
                 }
                 _ => {}
             }
@@ -146,74 +136,11 @@ impl<'j> Client {
     }
 
 
-
-    fn get_env(&'j self) -> JNIEnv<'j> {
-        self.jvm.get_env().unwrap()
-    }
-
     fn get_cm_lookup(&self) -> &HashMap<String, CM> {
         &self.cm_lookup.get_hashmap()
     }
 
-    fn get_class_obj(&'j self, class_name: String) -> JClass<'j> {
-        let obf_class_name = self.get_class(class_name).get_name();
-        self.get_env().find_class(obf_class_name).unwrap()
-    }
-
     fn get_class(&self, key: String) -> &CM {
         self.get_cm_lookup().get(&key).unwrap()
-    }
-
-    fn get_class_loader(&'j self) -> JClass<'j> {
-        env.find_class("java/lang/ClassLoader").unwrap()
-    }
-
-    fn get_field_id(&'j self, class_name: String, name: String) -> BingusJFieldID<'j> {
-        let cm = self.get_class(class_name);
-        let obf_class_name = cm.get_name();
-        let field: &Mem = cm.get_field(&name);
-        let env = self.get_env();
-        unsafe {
-            MessageBoxA(
-            null_mut(),
-            CString::new("f1").unwrap().as_ptr(),
-            CString::new("bingushack").unwrap().as_ptr(),
-            MB_OK,
-            );
-        }  // runs
-
-        unsafe {
-            MessageBoxA(
-                null_mut(),
-                CString::new(format!("obf_class_name:{},field_name:{},field_type:{}", obf_class_name, field.get_name(), field.get_description())).unwrap().as_ptr(),
-                CString::new("bingushack").unwrap().as_ptr(),
-                MB_OK,
-            );
-        }
-        // something in here breaks
-        if field.is_static() {
-            BingusJFieldID { static_field: ManuallyDrop::new(
-                env.get_static_field_id(obf_class_name, field.get_name(), field.get_description()).unwrap()
-            ) }
-        } else {
-            BingusJFieldID { normal_field: ManuallyDrop::new(
-                env.get_field_id(obf_class_name, field.get_name(), field.get_description()).unwrap()
-            ) }
-        }
-    }
-
-    fn get_method_id(&'j self, class_name: String, name: String) -> BingusJMethodID<'j> {
-        let cm = self.get_class(class_name);
-        let method: &Mem = cm.get_methods().get(&name).unwrap();
-        let env = self.get_env();
-        if method.is_static() {
-            BingusJMethodID { static_method: ManuallyDrop::new(
-                env.get_static_method_id(self.get_class(name.clone()).get_name(), name, method.get_description()).unwrap()
-            )}
-        } else {
-            BingusJMethodID { normal_method: ManuallyDrop::new(
-                env.get_method_id(self.get_class(name.clone()).get_name(), name, method.get_description()).unwrap()
-            ) }
-        }
     }
 }

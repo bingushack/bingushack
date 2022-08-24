@@ -96,18 +96,18 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     {
         hwnd = FindWindowA(
             null_mut(),
-            CString::new("Minecraft* 1.18.2").unwrap().as_ptr(),
+            CString::new("Minecraft 1.18.2").unwrap().as_ptr(),
         );
         if hwnd == null_mut() {
             hwnd = FindWindowA(
                 null_mut(),
-                CString::new("Minecraft* 1.18.2 - Multiplayer (3rd-party Server)").unwrap().as_ptr(),
+                CString::new("Minecraft 1.18.2 - Multiplayer (3rd-party Server)").unwrap().as_ptr(),
             );
         }
         if hwnd == null_mut() {
             hwnd = FindWindowA(
                 null_mut(),
-                CString::new("Minecraft* 1.18.2 - Singleplayer").unwrap().as_ptr(),
+                CString::new("Minecraft 1.18.2 - Singleplayer").unwrap().as_ptr(),
             );
         }
     }
