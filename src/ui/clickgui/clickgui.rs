@@ -1,15 +1,16 @@
 use std::sync::mpsc::{Receiver, Sender};
 use super::clickgui_message::ClickGuiMessage;
 use crate::client::Client;
+use jni::JNIEnv;
 
 use eframe::egui;
 
-pub fn init_clickgui() -> (ClickGui, Sender<ClickGuiMessage>) {
+pub fn init_clickgui<'c>(jni_env: JNIEnv<'static>) -> (ClickGui<'c>, Sender<ClickGuiMessage>) {
     let (ntx, nrx) = std::sync::mpsc::channel();
-    (ClickGui::new(nrx), ntx)
+    (ClickGui::new(jni_env, nrx), ntx)
 }
 
-pub fn run_clickgui(app: ClickGui) {
+pub fn run_clickgui(app: ClickGui<'static>) {
     let options = eframe::NativeOptions::default();
     eframe::run_native(
         "bingushack",
@@ -18,18 +19,18 @@ pub fn run_clickgui(app: ClickGui) {
     );
 }
 
-pub struct ClickGui {
+pub struct ClickGui<'c> {
     rx: Receiver<ClickGuiMessage>,
 
     // sender to the client itself
     client_sender: Sender<ClickGuiMessage>,
-    client: Client,
+    client: Client<'c>,
 }
 
-impl ClickGui {
-    pub fn new(rx: Receiver<ClickGuiMessage>) -> Self {
+impl ClickGui<'_> {
+    pub fn new(jni_env: JNIEnv<'static>, rx: Receiver<ClickGuiMessage>) -> Self {
         let (client_sender, client_receiver) = std::sync::mpsc::channel();
-        let client = Client::new(client_receiver, client_sender.clone());
+        let client = Client::new(jni_env, client_receiver, client_sender.clone());
         Self {
             rx,
             client_sender,
@@ -42,7 +43,7 @@ impl ClickGui {
     }
 }
 
-impl eframe::App for ClickGui {
+impl eframe::App for ClickGui<'_> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
             if let Ok(message) = self.rx.try_recv() {
@@ -61,5 +62,3 @@ impl eframe::App for ClickGui {
         });
     }
 }
-
-// unsafe impl<'c> Send for ClickGui<'c> {}

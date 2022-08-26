@@ -18,22 +18,30 @@ use std::sync::mpsc::{Sender, Receiver};
 use ui::message::Message;
 use std::sync::{Arc, Mutex};
 use std::borrow::BorrowMut;
+use jni::{JavaVM, JNIEnv};
+
 
 #[cfg(target_os="windows")]
 
 //todo macro for cstring
 
 
+pub fn message_box(text: &str) {
+    unsafe {
+        MessageBoxA(
+            null_mut(),
+            CString::new(text).unwrap().as_ptr(),
+            CString::new("bingushack").unwrap().as_ptr(),
+            MB_OK,
+        );
+    }
+}
+
 
 unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
 
-    MessageBoxA(
-        null_mut(),
-        CString::new("injected").unwrap().as_ptr(),
-        CString::new("bingushack").unwrap().as_ptr(),
-        MB_OK,
-    );
+    message_box("injected");
 
 
 
@@ -78,7 +86,21 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                         //*inner_tx_clickgui.lock().unwrap() = tmp.1;
 
                         std::thread::spawn(move || {
-                            let client = init_clickgui().0;
+                            let jvm: JavaVM = {
+                                use jni::sys::JNI_GetCreatedJavaVMs;
+                    
+                                let jvm_ptr = Vec::with_capacity(1).as_mut_ptr();
+                                JNI_GetCreatedJavaVMs(jvm_ptr, 1, null_mut());
+                    
+                                JavaVM::from_raw(*jvm_ptr).unwrap()
+                            };
+
+                            let jni_env: JNIEnv<'_> = jvm.attach_current_thread_as_daemon().unwrap();
+
+                            // i've always wanted to do this
+                            let jni_env: JNIEnv<'static> = std::mem::transmute::<JNIEnv<'_>, JNIEnv<'static>>(jni_env);
+
+                            let client = init_clickgui(jni_env).0;
                             run_clickgui(client);
                         });
                     },
@@ -133,12 +155,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
     tx.send(Message::KillThread).unwrap();
     let eject_code = clickgui_thread.join().unwrap();
-    MessageBoxA(
-        null_mut(),
-        CString::new("ejected").unwrap().as_ptr(),
-        CString::new("bingushack").unwrap().as_ptr(),
-        MB_OK,
-    );
+    message_box("ejected");
     FreeLibraryAndExitThread(
         base as _,
         eject_code

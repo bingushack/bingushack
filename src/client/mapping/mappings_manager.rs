@@ -1,105 +1,207 @@
-use crate::client::mapping::{CM, Mem};
+use crate::client::mapping::{CM, Mem, StaticMem};
 use std::collections::HashMap;
+use std::cell::RefCell;
+use jni::{JNIEnv, JavaVM};
 
-pub struct MappingsManager {
-    mappings: HashMap<String, CM>,
+#[derive(Debug)]
+pub struct MappingsManager<'a> {
+    mappings: HashMap<String, CM<'a>>,
 }
 
-impl MappingsManager{
-    pub fn new() -> Self {
-        let mut new_self = Self {
+impl<'j> MappingsManager<'j> {
+    pub fn new(jni_env: JNIEnv<'j>) -> MappingsManager<'j> {
+        let mut new_self = MappingsManager {
             mappings: HashMap::new(),
         };
 
-
-        new_self.map_stuff();
-
+        new_self.map_stuff(jni_env);
 
         new_self
     }
 
-    fn map_stuff(&mut self) {
-        // todo: add obfuscated mappings stuff
-        // see https://github.com/UnknownDetectionParty/UDP-CPP/blob/018233f85f81ac0c2f7ccd780844be8a8102d39a/UDP/mapping/Mapping.h#L31
-
+    fn map_stuff(&mut self, jni_env: JNIEnv<'j>) {
+        // todo make these into a macro for each mapping
         {
-            let class_name =  "TitleScreen".to_string();
-            let mut title_screen_cm = Self::make("class_442".to_string());
-            Self::add_obf_field(
-                &mut title_screen_cm,
-                "splashText".to_string(),
-                "field_2586".to_string(),
-                "Ljava/lang/String;".to_string(), // 50% sure this is the issue
+            let class_name =  "MinecraftClient".to_string();
+            let mut cm = Self::make();
+            cm.apply_class(jni_env.find_class("dyr").unwrap());
+            /*
+            Self::add_field(
+                &mut cm,
+                "player".to_string(),
+                "s".to_string(),
+                "Lepw;".to_string(),
+                false,
+            );
+            */
+
+            Self::add_field(
+                &mut cm,
+                "level".to_string(),
+                "r".to_string(),
+                "Lems;".to_string(),
                 false,
             );
 
-            self.mappings.insert(class_name, title_screen_cm);
+            Self::add_method(
+                &mut cm,
+                "getInstance".to_string(),
+                "D".to_string(),
+                "()Ldyr;".to_string(),
+                true,
+            );
+
+
+            self.mappings.insert(class_name, cm);
+        }
+        {
+            let class_name = "ClientLevel".to_string();
+            let mut cm = Self::make();
+            cm.apply_class(jni_env.find_class("ems").unwrap());
+
+            Self::add_method(
+                &mut cm,
+                "players".to_string(),
+                "y".to_string(),
+                "()Ljava/util/List;".to_string(),
+                false,
+            );
+
+            self.mappings.insert(class_name, cm);
+        }
+        {
+            let class_name = "ClientLevel".to_string();
+            let mut cm = Self::make();
+            cm.apply_class(jni_env.find_class("ems").unwrap());
+
+            Self::add_method(
+                &mut cm,
+                "players".to_string(),
+                "y".to_string(),
+                "()Ljava/util/List;".to_string(),
+                false,
+            );
+
+            self.mappings.insert(class_name, cm);
+        }
+
+        // remove
+        {
+            let class_name = "List".to_string();
+            let mut cm = Self::make();
+            cm.apply_class(jni_env.find_class("java/util/List").unwrap());
+
+            Self::add_method(
+                &mut cm,
+                "size".to_string(),
+                "size".to_string(),
+                "()I".to_string(),
+                false,
+            );
+
+            Self::add_method(
+                &mut cm,
+                "get".to_string(),
+                "get".to_string(),
+                "(I)L".to_string(),
+                false,
+            );
+
+            self.mappings.insert(class_name, cm);
+        }
+        {
+            let class_name = "LivingEntity".to_string();
+            let mut cm = Self::make();
+            cm.apply_class(jni_env.find_class("axy").unwrap());
+
+            Self::add_method(
+                &mut cm,
+                "forceAddEffect".to_string(),
+                "c".to_string(),
+                "(Laxe;Laxk;)V".to_string(),  // args are a `MobEffectInstance` and `Entity`
+                false,
+            );
+
+            self.mappings.insert(class_name, cm);
+        }
+        // make an instance with `JNIEnv::new_object()` and a `JClass` of `MobEffects`
+        {
+            let class_name = "MobEffectInstance".to_string();
+            let mut cm = Self::make();
+            cm.apply_class(jni_env.find_class("axe").unwrap());
+
+            self.mappings.insert(class_name, cm);
+        }
+        {
+            let class_name = "MobEffects".to_string();
+            let mut cm = Self::make();
+            cm.apply_class(jni_env.find_class("axg").unwrap());
+
+            Self::add_field(
+                &mut cm,
+                "GLOWING".to_string(),
+                "x".to_string(),
+                "Laxc;".to_string(),
+                true,
+            );
+
+            self.mappings.insert(class_name, cm);
         }
     }
 
-    pub fn get(&self, class_name: &String) -> Option<&CM> {
-        self.mappings.get(class_name)
+    pub fn get(&self, class_name: &str) -> Option<&CM> {
+        unsafe { self.mappings.get(&class_name.to_string()).map(|r| std::mem::transmute::<&CM<'j>, &CM<'_>>(r)) }
     }
 
-    pub fn get_hashmap(&self) -> &HashMap<String, CM> {
-        &self.mappings
-    }
-
-
-    // todo: move these to CM impl block
-    fn make(name: String) -> CM {
+    // todo move to CM impl block
+    fn make<'m>() -> CM<'m> {
         CM {
-            name: format!("net.minecraft.{}", name),
+            class: None,
+            object: RefCell::new(None),
+
             fields: HashMap::new(),
+            static_fields: HashMap::new(),
+
             methods: HashMap::new(),
+            static_methods: HashMap::new()
         }
-    }
-
-    fn add_obf_field(
-        cm: &mut CM,
-        key_name: String,
-        ob_name: String,
-        desc: String,
-        is_static: bool,
-    ) {
-        let m = Mem {
-            name: ob_name,
-            description: desc,
-            is_static,
-        };
-        cm.fields.insert(key_name, m);
-    }
-
-    fn add_obf_method(
-        cm: &mut CM,
-        key_name: String,
-        ob_name: String,
-        desc: String,
-        is_static: bool,
-    ) {
-        let m = Mem {
-            name: ob_name,
-            description: desc,
-            is_static,
-        };
-        cm.methods.insert(key_name, m);
     }
 
     fn add_field(
         cm: &mut CM,
-        name: String,
-        desc: String,
+        key_name: String,
+        ob_name: String,
+        sig: String,
         is_static: bool,
     ) {
-        Self::add_obf_field(cm, name.clone(), name, desc, is_static);
+        let m = Mem {
+            name: ob_name,
+            sig,
+        };
+
+        if is_static {
+            cm.static_fields.insert(key_name, StaticMem { mem: m } );
+        } else {
+            cm.fields.insert(key_name, m);
+        }
     }
 
     fn add_method(
         cm: &mut CM,
-        name: String,
-        desc: String,
+        key_name: String,
+        ob_name: String,
+        sig: String,
         is_static: bool,
     ) {
-        Self::add_obf_method(cm, name.clone(), name, desc, is_static);
+        let m = Mem {
+            name: ob_name,
+            sig,
+        };
+
+        if is_static {
+            cm.static_methods.insert(key_name, StaticMem { mem: m } );
+        } else {
+            cm.methods.insert(key_name, m);
+        }
     }
 }
