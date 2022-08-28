@@ -93,7 +93,6 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
                             let client = init_clickgui(jni_env).0;
                             run_clickgui(client);
-                            
                         });
                     },
                     Message::KillThread => break,
@@ -106,7 +105,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
 
     // this is ugly
-    let mut hwnd: winapi::shared::windef::HWND = null_mut();
+    let mut hwnd: winapi::shared::windef::HWND;
     {
         hwnd = FindWindowA(
             null_mut(),
@@ -134,6 +133,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
 
         // todo: invalidate these if the clickgui has panicked
+        // todo: might be able to get rid of these senders and just spawn the thread directly here. maybe
         if GetAsyncKeyState(VK_LEFT) & 0x01 == 1 {
             tx.send(Message::SpawnDebugConsole).unwrap();
         }
