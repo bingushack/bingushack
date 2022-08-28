@@ -50,7 +50,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     let clickgui_thread = std::thread::spawn(move || {
         // after clickgui is enabled, you can use tx_clickgui to send messages to the clickgui
         // and rx_clickgui to receive messages from the clickgui
-        let (tx_clickgui, rx_clickgui): (Arc<Mutex<Sender<ClickGuiMessage>>>,  Arc<Mutex<Receiver<ClickGuiMessage>>>) = {
+        let (_tx_clickgui, _rx_clickgui): (Arc<Mutex<Sender<ClickGuiMessage>>>,  Arc<Mutex<Receiver<ClickGuiMessage>>>) = {
             let (tx, rx) = mpsc::channel();
             (Arc::new(Mutex::new(tx)), Arc::new(Mutex::new(rx)))
         };

@@ -6,7 +6,6 @@ use super::{
 };
 use crate::ClickGuiMessage;
 use jni::objects::{JValue, JObject};
-use crate::message_box;
 
 
 

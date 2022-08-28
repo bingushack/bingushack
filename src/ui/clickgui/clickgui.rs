@@ -3,8 +3,6 @@ use super::{
     clickgui_message::ClickGuiMessage,
 };
 use crate::client::{Client, Modules};
-use crate::ui::widgets::toggle;
-use crate::message_box;
 use jni::JNIEnv;
 use crate::ui::widgets::module_widget;
 
