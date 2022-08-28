@@ -8,18 +8,29 @@ use crate::ui::widgets::module_widget;
 
 use eframe::egui;
 
+
+static mut ENABLED: bool = false;
+
+
+
 pub fn init_clickgui<'c>(jni_env: JNIEnv<'static>) -> (ClickGui<'c>, Sender<ClickGuiMessage>) {
     let (ntx, nrx) = std::sync::mpsc::channel();
     (ClickGui::new(jni_env, nrx), ntx)
 }
 
 pub fn run_clickgui(app: ClickGui<'static>) {
+    if unsafe { ENABLED } {
+        return;
+    }
+    // else
+    unsafe { ENABLED = true; }
     let options = eframe::NativeOptions::default();
     eframe::run_native(
         "bingushack",
         options,
         Box::new(|_cc| Box::new(app)),
     );
+    unsafe { ENABLED = false; }
 }
 
 pub struct ClickGui<'c> {

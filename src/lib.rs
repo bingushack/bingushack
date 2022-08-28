@@ -44,7 +44,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
 
 
-
+    
     // channel to send and recieve messages involving the thread for the guis
     let (tx, rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
     let clickgui_thread = std::thread::spawn(move || {
@@ -65,7 +65,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                         let tmp = init_debug_console();
                         debug_console = tmp.0;
                         debug_console_sender = Some(tmp.1);
-                        std::thread::spawn(move || {
+                        std::thread::spawn(|| {
                             run_debug_console(debug_console);
                         });
                     },
@@ -76,7 +76,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                             sender.send(String::from("spawn gui")).unwrap();
                         }
 
-                        std::thread::spawn(move || {
+                        std::thread::spawn(|| {
                             let jvm: JavaVM = {
                                 use jni::sys::JNI_GetCreatedJavaVMs;
                     

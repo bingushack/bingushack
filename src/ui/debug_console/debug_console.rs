@@ -2,18 +2,29 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use eframe::egui;
 
+
+
+static mut ENABLED: bool = false;
+
+
 pub fn init_debug_console() -> (DebugConsole, Sender<String>) {
     let (tx, rx) = std::sync::mpsc::channel();
     (DebugConsole::new(rx, tx.clone()), tx)
 }
 
 pub fn run_debug_console(app: DebugConsole) {
+    if unsafe { ENABLED } {
+        return;
+    }
+    // else
+    unsafe { ENABLED = true; }
     let options = eframe::NativeOptions::default();
     eframe::run_native(
         "bingushack debug",
         options,
         Box::new(|_cc| Box::new(app)),
     );
+    unsafe { ENABLED = false; }
 }
 
 pub struct DebugConsole {
