@@ -61,9 +61,11 @@ impl eframe::App for ClickGui<'_> {
             for mut enabled_setting in self.modules.iter_mut() {
                 let module = enabled_setting.get_module();
                 let enabled = enabled_setting.get_enabled_mut();
-                ui.add(toggle(enabled));
-                ui.label(format!("{:#?}", module));
-                ui.end_row();
+
+                ui.horizontal(|ui| {
+                    ui.add(toggle(enabled));
+                    ui.label(format!("{:#?}", module));
+                });
 
                 if *enabled {
                     self.client_sender.send(ClickGuiMessage::RunModule(module)).unwrap();
