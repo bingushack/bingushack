@@ -3,14 +3,13 @@ mod mappings_manager;
 pub use self::mappings_manager::MappingsManager;
 
 use jni::objects::{JObject, JClass};
-use jni::JNIEnv;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct CM<'j> {
-    class: Option<JClass<'j>>,  // todo try to make this not an option
+    class: RefCell<Option<JClass<'j>>>,
     object: RefCell<Option<JObject<'j>>>,  // bruh
 
     fields: HashMap<String, Mem>,
@@ -38,7 +37,7 @@ impl<'j> CM<'j> {
     }
 
     pub fn get_class(&self) -> JClass<'j> {
-        self.class.unwrap()
+        (*self.class.borrow()).unwrap()
     }
 
     pub fn get_object(&self) -> Option<JObject<'j>> {
@@ -51,8 +50,8 @@ impl<'j> CM<'j> {
         *self.object.borrow_mut() = Some(object);
     }
 
-    pub fn apply_class(&mut self, class: JClass<'j>) {
-        self.class = Some(class);
+    pub fn apply_class(&self, class: JClass<'j>) {
+        *self.class.borrow_mut() = Some(class);
     }
 }
 

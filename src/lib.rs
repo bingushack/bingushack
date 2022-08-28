@@ -17,7 +17,6 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 use ui::message::Message;
 use std::sync::{Arc, Mutex};
-use std::borrow::BorrowMut;
 use jni::{JavaVM, JNIEnv};
 
 
@@ -76,14 +75,6 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                         if let Some(sender) = debug_console_sender.clone() {
                             sender.send(String::from("spawn gui")).unwrap();
                         }
-
-
-                        //let mut inner_tx_clickgui = tx_clickgui.clone();
-
-
-                        // let tmp = init_clickgui();
-
-                        //*inner_tx_clickgui.lock().unwrap() = tmp.1;
 
                         std::thread::spawn(move || {
                             let jvm: JavaVM = {
