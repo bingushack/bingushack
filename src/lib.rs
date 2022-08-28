@@ -58,42 +58,55 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
         // todo: make so that if you spawn multiple debug consoles, they all receive the same messages
         let mut debug_console_sender: Option<Sender<String>> = None;
         let mut debug_console;
+        let (mut debug_enabled, mut clickgui_enabled) = (false, false);
         loop {
             match rx.recv() {
                 Ok(message) => match message {
                     Message::SpawnDebugConsole => {
-                        let tmp = init_debug_console();
-                        debug_console = tmp.0;
-                        debug_console_sender = Some(tmp.1);
-                        std::thread::spawn(move || {
-                            run_debug_console(debug_console);
-                        });
+                        if debug_enabled {
+                            continue;
+                        } else {
+                            debug_enabled = true;
+                            let tmp = init_debug_console();
+                            debug_console = tmp.0;
+                            debug_console_sender = Some(tmp.1);
+                            std::thread::spawn(move || {
+                                run_debug_console(debug_console);
+                                debug_enabled = false;
+                            });
+                        }
                     },
                     Message::SpawnGui => {
-                        // send message "spawn gui" to debug console with debug_console_sender
-                        // spawns the proper clickgui as well
-                        if let Some(sender) = debug_console_sender.clone() {
-                            sender.send(String::from("spawn gui")).unwrap();
+                        if clickgui_enabled {
+                            continue;
+                        } else {
+                            clickgui_enabled = true;
+                            // send message "spawn gui" to debug console with debug_console_sender
+                            // spawns the proper clickgui as well
+                            if let Some(sender) = debug_console_sender.clone() {
+                                sender.send(String::from("spawn gui")).unwrap();
+                            }
+
+                            std::thread::spawn(move || {
+                                let jvm: JavaVM = {
+                                    use jni::sys::JNI_GetCreatedJavaVMs;
+                        
+                                    let jvm_ptr = Vec::with_capacity(1).as_mut_ptr();
+                                    JNI_GetCreatedJavaVMs(jvm_ptr, 1, null_mut());
+                        
+                                    JavaVM::from_raw(*jvm_ptr).unwrap()
+                                };
+
+                                let jni_env: JNIEnv<'_> = jvm.attach_current_thread_as_daemon().unwrap();
+
+                                // i've always wanted to do this
+                                let jni_env: JNIEnv<'static> = std::mem::transmute::<JNIEnv<'_>, JNIEnv<'static>>(jni_env);
+
+                                let client = init_clickgui(jni_env).0;
+                                run_clickgui(client);
+                                clickgui_enabled = false;
+                            });
                         }
-
-                        std::thread::spawn(move || {
-                            let jvm: JavaVM = {
-                                use jni::sys::JNI_GetCreatedJavaVMs;
-                    
-                                let jvm_ptr = Vec::with_capacity(1).as_mut_ptr();
-                                JNI_GetCreatedJavaVMs(jvm_ptr, 1, null_mut());
-                    
-                                JavaVM::from_raw(*jvm_ptr).unwrap()
-                            };
-
-                            let jni_env: JNIEnv<'_> = jvm.attach_current_thread_as_daemon().unwrap();
-
-                            // i've always wanted to do this
-                            let jni_env: JNIEnv<'static> = std::mem::transmute::<JNIEnv<'_>, JNIEnv<'static>>(jni_env);
-
-                            let client = init_clickgui(jni_env).0;
-                            run_clickgui(client);
-                        });
                     },
                     Message::KillThread => break,
                 }
