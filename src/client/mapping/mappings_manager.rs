@@ -1,7 +1,7 @@
 use crate::client::mapping::{CM, Mem, StaticMem};
 use std::collections::HashMap;
 use std::cell::RefCell;
-use jni::{JNIEnv, JavaVM};
+use jni::JNIEnv;
 
 #[derive(Debug)]
 pub struct MappingsManager<'a> {

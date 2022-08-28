@@ -2,8 +2,7 @@ mod module;
 mod setting;
 mod client;
 mod mapping;
+mod modules_enum;
 
 pub use self::client::*;
-
-pub fn run_client(client: Client) {
-}
+pub use self::modules_enum::Modules;

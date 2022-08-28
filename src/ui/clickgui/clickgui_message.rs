@@ -1,4 +1,5 @@
 pub enum ClickGuiMessage {
-    StringMessage(String),
-    Dev(String),
+    RunModule(crate::client::Modules),
+
+    Unused,  // for pattern-matching purposes
 }

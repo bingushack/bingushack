@@ -1,6 +1,10 @@
 use std::sync::mpsc::{Receiver, Sender};
-use super::clickgui_message::ClickGuiMessage;
-use crate::client::Client;
+use super::{
+    clickgui_message::ClickGuiMessage,
+    enabled_setting::EnabledSetting,
+};
+use crate::client::{Client, Modules};
+use crate::message_box;
 use jni::JNIEnv;
 
 use eframe::egui;
@@ -25,6 +29,8 @@ pub struct ClickGui<'c> {
     // sender to the client itself
     client_sender: Sender<ClickGuiMessage>,
     client: Client<'c>,
+
+    modules: Vec<EnabledSetting>,
 }
 
 impl ClickGui<'_> {
@@ -35,6 +41,11 @@ impl ClickGui<'_> {
             rx,
             client_sender,
             client,
+
+            // prolly a better way to do this with hashmaps/hashsets in the future
+            modules: vec![
+                EnabledSetting::new(Modules::AutoTotem, false),
+            ],
         }
     }
 
@@ -46,19 +57,18 @@ impl ClickGui<'_> {
 impl eframe::App for ClickGui<'_> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
-            if let Ok(message) = self.rx.try_recv() {
-                match message {
-                    ClickGuiMessage::StringMessage(text) => {
-                        ui.label(text);
-                    }
-                    _ => {}
+            for mut enabled_setting in self.modules.iter_mut() {
+                let module = enabled_setting.get_module();
+                let enabled = enabled_setting.get_enabled_mut();
+                ui.checkbox(enabled, format!("{:#?}", module));
+
+                if *enabled {
+                    self.client_sender.send(ClickGuiMessage::RunModule(module)).unwrap();
                 }
             }
 
-            if ui.button("do a thing").clicked() {
-                self.client_sender.send(ClickGuiMessage::Dev("Hello world!".to_string())).unwrap();
-                self.client.client_tick();
-            }
+
+            self.client.client_tick();
         });
     }
 }

@@ -25,7 +25,7 @@ pub struct DebugConsole {
 impl DebugConsole {
     pub fn new(rx: Receiver<String>, tx: Sender<String>,) -> Self {
         Self {
-            text: vec![String::from("start")],
+            text: vec![String::from("")],
             rx,
             tx,
         }
@@ -39,7 +39,7 @@ impl eframe::App for DebugConsole {
                 self.text.insert(0, text);
             }
 
-            ui.hyperlink("https://github.com/bingushack/bingushack");
+            ui.hyperlink("http://bingushack.cc");
 
             ui.separator();
 
