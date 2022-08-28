@@ -1,12 +1,12 @@
 use std::sync::mpsc::{Receiver, Sender};
 use super::{
     clickgui_message::ClickGuiMessage,
-    enabled_setting::EnabledSetting,
 };
 use crate::client::{Client, Modules};
 use crate::ui::widgets::toggle;
 use crate::message_box;
 use jni::JNIEnv;
+use crate::ui::widgets::module_widget;
 
 use eframe::egui;
 
@@ -31,7 +31,7 @@ pub struct ClickGui<'c> {
     client_sender: Sender<ClickGuiMessage>,
     client: Client<'c>,
 
-    modules: Vec<EnabledSetting>,
+    modules: Vec<Modules>,
 }
 
 impl ClickGui<'_> {
@@ -45,7 +45,7 @@ impl ClickGui<'_> {
 
             // prolly a better way to do this with hashmaps/hashsets in the future
             modules: vec![
-                EnabledSetting::new(Modules::AutoTotem, false),
+                Modules::AutoTotem(false, vec![]),
             ],
         }
     }
@@ -58,17 +58,12 @@ impl ClickGui<'_> {
 impl eframe::App for ClickGui<'_> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
-            for mut enabled_setting in self.modules.iter_mut() {
-                let module = enabled_setting.get_module();
-                let enabled = enabled_setting.get_enabled_mut();
+            for mut module in self.modules.iter_mut() {
 
-                ui.horizontal(|ui| {
-                    ui.add(toggle(enabled));
-                    ui.label(format!("{:#?}", module));
-                });
+                ui.add(module_widget(&mut module));
 
-                if *enabled {
-                    self.client_sender.send(ClickGuiMessage::RunModule(module)).unwrap();
+                if module.get_enabled() {
+                    self.client_sender.send(ClickGuiMessage::RunModule(module.clone())).unwrap();
                 }
             }
 

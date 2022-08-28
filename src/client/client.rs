@@ -38,7 +38,7 @@ impl<'j> Client<'j> {
             match message {
                 ClickGuiMessage::RunModule(module) => {
                     match module {
-                        Modules::AutoTotem => {
+                        Modules::AutoTotem(_, _) => {
                             let minecraft_client = self.mappings.get("MinecraftClient").unwrap();
                             {
                                 let get_instance_method = minecraft_client.get_static_method("getInstance").unwrap();
