@@ -10,6 +10,8 @@ jni = { version = "0.19.0", features = ["invocation"] }
 winapi = { version = "0.3.9", features = ["processthreadsapi", "libloaderapi", "winuser", "handleapi"] }
 eframe = { path = "./lib/egui/eframe" }
 glutin = "0.28.0"
+obfstr = "0.4.1"
+uniqueid = "0.2.6"
 
 [lib]
 crate-type = ["dylib"]

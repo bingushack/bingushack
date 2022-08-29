@@ -39,6 +39,24 @@ pub fn message_box(text: &str) {
 
 unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
+    // check hwid
+    if obfstr::obfstr!(env!("HWID")) != {
+        use uniqueid::{IdentifierBuilder, IdentifierType};
+
+
+        let mut builder = IdentifierBuilder::default();
+
+        builder.name("bingus");
+        builder.add(IdentifierType::CPU);
+        builder.add(IdentifierType::RAM);
+        builder.add(IdentifierType::DISK);
+
+        builder.build().to_string(true)
+    } {
+        message_box("consider buying the client at http://bingushack.cc");
+        panic!();
+    }
+
 
     message_box("injected");
 
