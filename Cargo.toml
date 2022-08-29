@@ -15,3 +15,7 @@ uniqueid = "0.2.6"
 
 [lib]
 crate-type = ["dylib"]
+
+[profile.release]
+debug = false
+strip = true
