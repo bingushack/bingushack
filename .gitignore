@@ -1,5 +1,6 @@
 /target
 /.idea
+/.vscode
 
 # so i can code without leaking my hwid is that even a thing like is this a security risk
 build.rs

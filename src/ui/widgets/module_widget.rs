@@ -8,7 +8,7 @@ fn module_ui(ui: &mut egui::Ui, module: &mut Modules) -> egui::Response {
     let desired_size = ui.spacing().interact_size.y * egui::vec2(5.0, 2.0);
 
     // response is mut on purpose
-    let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+    let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
 
     if ui.is_rect_visible(rect) {
         ui.horizontal(|ui| {

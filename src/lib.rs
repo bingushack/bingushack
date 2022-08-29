@@ -22,15 +22,16 @@ use jni::{JavaVM, JNIEnv};
 
 #[cfg(target_os="windows")]
 
-//todo macro for cstring
 
 
 pub fn message_box(text: &str) {
+    let caption = CString::new("bingushack").unwrap();
+    let text = CString::new(text).unwrap();
     unsafe {
         MessageBoxA(
             null_mut(),
-            CString::new(text).unwrap().as_ptr(),
-            CString::new("bingushack").unwrap().as_ptr(),
+            text.as_ptr(),
+            caption.as_ptr(),
             MB_OK,
         );
     }
@@ -125,20 +126,23 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     // this is ugly
     let mut hwnd: winapi::shared::windef::HWND;
     {
+        let window_name = CString::new("Minecraft 1.18.2").unwrap();
         hwnd = FindWindowA(
             null_mut(),
-            CString::new("Minecraft 1.18.2").unwrap().as_ptr(),
+            window_name.as_ptr(),
         );
+        let window_name = CString::new("Minecraft 1.18.2 - Multiplayer (3rd-party Server)").unwrap();
         if hwnd == null_mut() {
             hwnd = FindWindowA(
                 null_mut(),
-                CString::new("Minecraft 1.18.2 - Multiplayer (3rd-party Server)").unwrap().as_ptr(),
+                window_name.as_ptr(),
             );
         }
+        let window_name = CString::new("Minecraft 1.18.2 - Singleplayer").unwrap();
         if hwnd == null_mut() {
             hwnd = FindWindowA(
                 null_mut(),
-                CString::new("Minecraft 1.18.2 - Singleplayer").unwrap().as_ptr(),
+                window_name.as_ptr(),
             );
         }
     }

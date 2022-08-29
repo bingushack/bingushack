@@ -19,6 +19,21 @@ pub struct CM<'j> {
     static_methods: HashMap<String, StaticMem>,
 }
 
+impl<'j> Default for CM<'j> {
+    fn default() -> CM<'j> {
+        CM {
+            class: RefCell::new(None),
+            object: RefCell::new(None),
+    
+            fields: HashMap::new(),
+            static_fields: HashMap::new(),
+    
+            methods: HashMap::new(),
+            static_methods: HashMap::new()
+        }
+    }
+}
+
 impl<'j> CM<'j> {
     pub fn get_field(&self, name: &str) -> Option<&Mem> {
         self.fields.get(&name.to_string())
@@ -52,6 +67,49 @@ impl<'j> CM<'j> {
 
     pub fn apply_class(&self, class: JClass<'j>) {
         *self.class.borrow_mut() = Some(class);
+    }
+
+
+
+
+
+
+    fn add_method(
+        &mut self,
+        key_name: String,
+        ob_name: String,
+        sig: String,
+        is_static: bool,
+    ) {
+        let m = Mem {
+            name: ob_name,
+            sig,
+        };
+    
+        if is_static {
+            self.static_methods.insert(key_name, StaticMem { mem: m } );
+        } else {
+            self.methods.insert(key_name, m);
+        }
+    }
+
+    fn add_field(
+        &mut self,
+        key_name: String,
+        ob_name: String,
+        sig: String,
+        is_static: bool,
+    ) {
+        let m = Mem {
+            name: ob_name,
+            sig,
+        };
+    
+        if is_static {
+            self.static_fields.insert(key_name, StaticMem { mem: m } );
+        } else {
+            self.fields.insert(key_name, m);
+        }
     }
 }
 

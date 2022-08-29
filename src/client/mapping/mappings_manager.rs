@@ -1,265 +1,223 @@
-use crate::client::mapping::{CM, Mem, StaticMem};
+use crate::client::mapping::CM;
 use std::collections::HashMap;
-use std::cell::RefCell;
 use jni::JNIEnv;
 
-#[derive(Debug)]
+
+
+
+#[derive(Debug, Default)]
 pub struct MappingsManager<'a> {
     mappings: HashMap<String, CM<'a>>,
 }
 
 impl<'j> MappingsManager<'j> {
     pub fn new(jni_env: JNIEnv<'j>) -> MappingsManager<'j> {
-        let mut new_self = MappingsManager {
-            mappings: HashMap::new(),
-        };
+        macro_rules! adds {
+            ($cm:ident) => {
+                macro_rules! add_field {
+                    ($key_name:literal, $ob_name:literal, $sig:literal, $is_static:literal) => {
+                        $cm.add_field($key_name.to_string(), $ob_name.to_string(), $sig.to_string(), $is_static)
+                    };
+                }
 
-        new_self.map_stuff(jni_env);
+                // macros for making a new method
+                macro_rules! add_method {
+                    ($key_name:literal, $ob_name:literal, $sig:literal, $is_static:literal) => {
+                        $cm.add_method($key_name.to_string(), $ob_name.to_string(), $sig.to_string(), $is_static)
+                    };
+                }
+            }
+        }
+        // macro for making a class mapping
+        macro_rules! add_mapping {
+            (
+                $new_self:ident,
+                $class_name:literal,            // the easy-to-use name of the class
+                $class_path:literal,            // path to the class or the obfuscated class name
+                $fields_and_methods:block       // the fields and methods of the class (using the `add_field_or_method!` macro)
+            ) => {{
+                let mut cm = CM::default();
+                cm.apply_class(jni_env.find_class($class_path).unwrap());
+
+                adds!(cm);
+                $fields_and_methods
+
+                $new_self.mappings.insert($class_name.to_string(), cm);
+            }}
+        }
+
+        let mut new_self = MappingsManager::default();
+
+        // add the mappings
+        add_mapping!(
+            new_self,
+            "MinecraftClient",
+            "dyr",
+            {
+                add_field!(
+                    "player",
+                    "s",
+                    "Lepw;",
+                    false
+                );
+                add_field!(
+                    "level",
+                    "r",
+                    "Lems;",
+                    false
+                );
+                add_field!(
+                    "interactionManager",
+                    "q",
+                    "Lemv;",
+                    false
+                );
+
+                add_method!(
+                    "getInstance",
+                    "D",
+                    "()Ldyr;",
+                    true
+                );
+            }
+        );
+        add_mapping!(
+            new_self,
+            "ClientLevel",
+            "ems",
+            {
+                add_field!(
+                    "players",
+                    "y",
+                    "()Ljava/util/List;",
+                    false
+                );
+            }
+        );
+        add_mapping!(
+            new_self,
+            "PlayerEntity",
+            "boj",
+            {
+                add_field!(
+                    "currentScreenHandler",
+                    "bV",
+                    "Lbqp;",
+                    false
+                );
+
+                add_method!(
+                    "getInventory",
+                    "fr",
+                    "()Lboi;",
+                    false
+                );
+
+                add_method!(
+                    "getOffHandStack",
+                    "et",
+                    "()Lbuw;",
+                    false
+                );
+            }
+        );
+        add_mapping!(
+            new_self,
+            "Inventory",
+            "awa",
+            {
+                add_method!(
+                    "getStack",
+                    "a",
+                    "(I)Lbuw;",
+                    false
+                );
+            }
+        );
+        add_mapping!(
+            new_self,
+            "InteractionManager",
+            "emv",
+            {
+                add_method!(
+                    "clickSlot",
+                    "a",
+                    "(IIILbqy;Lboj;)V",
+                    false
+                );
+            }
+        );
+        add_mapping!(
+            new_self,
+            "ScreenHandler",
+            "bqp",
+            {
+                add_field!(
+                    "syncId",
+                    "j",
+                    "I;",
+                    false
+                );
+            }
+        );
+        add_mapping!(
+            new_self,
+            "SlotActionType",
+            "bqy",
+            {
+                add_field!(
+                    "PICKUP",
+                    "a",
+                    "Lbqy;",
+                    true
+                );
+            }
+        );
+        add_mapping!(
+            new_self,
+            "Items",
+            "buy",
+            {
+                add_field!(
+                    "TOTEM_OF_UNDYING",
+                    "sw",
+                    "Lbus;",
+                    true
+                );
+            }
+        );
+        add_mapping!(
+            new_self,
+            "ItemStack",
+            "buw",
+            {
+                add_field!(
+                    "getItem",
+                    "c",
+                    "Lbus;",
+                    false
+                );
+            }
+        );
+        add_mapping!(
+            new_self,
+            "Item",
+            "bus",
+            {
+                add_field!(
+                    "getRawId",
+                    "a",
+                    "(Lbus;)I",
+                    true
+                );
+            }
+        );
+
 
         new_self
     }
 
-    fn map_stuff(&mut self, jni_env: JNIEnv<'j>) {
-        // todo make these into a macro for each mapping
-        {
-            let class_name =  "MinecraftClient".to_string();
-            let mut cm = Self::make();
-            cm.apply_class(jni_env.find_class("dyr").unwrap());
-
-            Self::add_field(
-                &mut cm,
-                "player".to_string(),
-                "s".to_string(),
-                "Lepw;".to_string(),
-                false,
-            );
-
-            Self::add_field(
-                &mut cm,
-                "level".to_string(),
-                "r".to_string(),
-                "Lems;".to_string(),
-                false,
-            );
-
-            Self::add_method(
-                &mut cm,
-                "getInstance".to_string(),
-                "D".to_string(),
-                "()Ldyr;".to_string(),
-                true,
-            );
-
-            Self::add_field(
-                &mut cm,
-                "interactionManager".to_string(),
-                "q".to_string(),
-                "Lemv;".to_string(),
-                false,
-            );
-
-
-            self.mappings.insert(class_name, cm);
-        }
-        {
-            let class_name = "ClientLevel".to_string();
-            let mut cm = Self::make();
-            cm.apply_class(jni_env.find_class("ems").unwrap());
-
-            Self::add_method(
-                &mut cm,
-                "players".to_string(),
-                "y".to_string(),
-                "()Ljava/util/List;".to_string(),
-                false,
-            );
-
-            self.mappings.insert(class_name, cm);
-        }
-        {
-            let class_name = "PlayerEntity".to_string();
-            let mut cm = Self::make();
-            cm.apply_class(jni_env.find_class("boj").unwrap());
-
-            Self::add_method(
-                &mut cm,
-                "getInventory".to_string(),
-                "fr".to_string(),
-                "()Lboi;".to_string(),
-                false,
-            );
-
-            Self::add_field(
-                &mut cm,
-                "currentScreenHandler".to_string(),
-                "bV".to_string(),
-                "Lbqp;".to_string(),
-                false,
-            );
-
-            Self::add_method(
-                &mut cm,
-                "getOffHandStack".to_string(),
-                "et".to_string(),
-                "()Lbuw;".to_string(),
-                false,
-            );
-
-            self.mappings.insert(class_name, cm);
-        }
-        {
-            let class_name = "Inventory".to_string();
-            let mut cm = Self::make();
-            cm.apply_class(jni_env.find_class("awa").unwrap());  // net/minecraft/world/Container
-            // finish
-            Self::add_method(
-                &mut cm,
-                "getStack".to_string(),
-                "a".to_string(),
-                "(I)Lbuw;".to_string(),
-                false,
-            );
-            self.mappings.insert(class_name, cm);
-        }
-        {
-            let class_name = "InteractionManager".to_string();
-            let mut cm = Self::make();
-            cm.apply_class(jni_env.find_class("emv").unwrap());
-            Self::add_method(
-                &mut cm,
-                "clickSlot".to_string(),
-                "a".to_string(),
-                "(IIILbqy;Lboj;)V".to_string(),  // int syncId, int slotId, int button, SlotActionType actionType, PlayerEntity player
-                false,
-            );
-
-            self.mappings.insert(class_name, cm);
-        }
-        {
-            let class_name = "ScreenHandler".to_string();
-            let mut cm = Self::make();
-            cm.apply_class(jni_env.find_class("bqp").unwrap());
-
-            Self::add_field(
-                &mut cm,
-                "syncId".to_string(),
-                "j".to_string(),
-                "I".to_string(),
-                false,
-            );
-
-            self.mappings.insert(class_name, cm);
-        }
-        {
-            let class_name = "SlotActionType".to_string();
-            let mut cm = Self::make();
-            cm.apply_class(jni_env.find_class("bqy").unwrap());
-            Self::add_field(
-                &mut cm,
-                "PICKUP".to_string(),
-                "a".to_string(),
-                "Lbqy;".to_string(),
-                true,
-            );
-
-            self.mappings.insert(class_name, cm);
-        }
-        {
-            let class_name = "Items".to_string();
-            let mut cm = Self::make();
-            cm.apply_class(jni_env.find_class("buy").unwrap());
-            Self::add_field(
-                &mut cm,
-                "TOTEM_OF_UNDYING".to_string(),
-                "sw".to_string(),
-                "Lbus;".to_string(),
-                true,
-            );
-            self.mappings.insert(class_name, cm);
-        }
-        {
-            let class_name = "ItemStack".to_string();
-            let mut cm = Self::make();
-            cm.apply_class(jni_env.find_class("buw").unwrap());
-            Self::add_method(
-                &mut cm,
-                "getItem".to_string(),
-                "c".to_string(),
-                "()Lbus;".to_string(),
-                false,
-            );
-            self.mappings.insert(class_name, cm);
-        }
-        {
-            let class_name = "Item".to_string();
-            let mut cm = Self::make();
-            cm.apply_class(jni_env.find_class("bus").unwrap());
-
-            Self::add_method(
-                &mut cm,
-                "getRawId".to_string(),
-                "a".to_string(),
-                "(Lbus;)I".to_string(),
-                true,
-            );
-
-            self.mappings.insert(class_name, cm);
-        }
-    }
-
     pub fn get(&self, class_name: &str) -> Option<&CM> {
         unsafe { self.mappings.get(&class_name.to_string()).map(|r| std::mem::transmute::<&CM<'j>, &CM<'_>>(r)) }
-    }
-
-    // todo move to CM impl block
-    fn make<'m>() -> CM<'m> {
-        CM {
-            class: RefCell::new(None),
-            object: RefCell::new(None),
-
-            fields: HashMap::new(),
-            static_fields: HashMap::new(),
-
-            methods: HashMap::new(),
-            static_methods: HashMap::new()
-        }
-    }
-
-    fn add_field(
-        cm: &mut CM,
-        key_name: String,
-        ob_name: String,
-        sig: String,
-        is_static: bool,
-    ) {
-        let m = Mem {
-            name: ob_name,
-            sig,
-        };
-
-        if is_static {
-            cm.static_fields.insert(key_name, StaticMem { mem: m } );
-        } else {
-            cm.fields.insert(key_name, m);
-        }
-    }
-
-    fn add_method(
-        cm: &mut CM,
-        key_name: String,
-        ob_name: String,
-        sig: String,
-        is_static: bool,
-    ) {
-        let m = Mem {
-            name: ob_name,
-            sig,
-        };
-
-        if is_static {
-            cm.static_methods.insert(key_name, StaticMem { mem: m } );
-        } else {
-            cm.methods.insert(key_name, m);
-        }
     }
 }

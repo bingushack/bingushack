@@ -241,7 +241,6 @@ impl<'j> Client<'j> {
                                 }
                             }
                         },
-                        _ => unimplemented!(),
                     }
                 }
                 _ => {}
