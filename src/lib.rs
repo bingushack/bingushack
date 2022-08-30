@@ -1,3 +1,5 @@
+#![feature(cell_leak)]
+
 mod ui;
 mod client;
 

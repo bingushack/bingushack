@@ -4,7 +4,8 @@ pub use self::autototem::*;
 use super::{
     BingusSetting,
     BingusModule,
-    RcBoxedBingusSetting,
+    BoxedBingusSetting,
+    BoxedBingusModule,
     SettingValue
 };
 use crate::client::mapping::MemTrait;

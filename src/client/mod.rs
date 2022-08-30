@@ -6,5 +6,6 @@ mod mapping;
 
 pub use self::client::{
     Client,
-    RcBoxedBingusSetting
+    BoxedBingusSetting,
+    BoxedBingusModule,
 };
