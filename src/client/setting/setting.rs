@@ -1,6 +1,9 @@
+use std::rc::Rc;
+use crate::client::RcBoxedBingusSetting;
+
 // todo implement From trait for BingusSetting
 pub trait BingusSetting {
-    fn new_boxed(value: SettingValue) -> Box<dyn BingusSetting> where Self: Sized;
+    fn new_boxed(value: SettingValue) -> RcBoxedBingusSetting where Self: Sized;
 
     fn get_value(&self) -> SettingValue;
 

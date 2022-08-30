@@ -1,7 +1,7 @@
 use crate::client::mapping::MappingsManager;
 use std::rc::Rc;
 use jni::JNIEnv;
-use crate::client::BoxedBingusSetting;
+use crate::client::RcBoxedBingusSetting;
 
 // todo make this all a nice big proc macro
 pub trait BingusModule {
@@ -17,11 +17,11 @@ pub trait BingusModule {
 
     fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>);
 
-    fn get_settings_mut(&mut self) -> &mut Vec<super::BoxedBingusSetting>;
+    fn get_settings_mut(&mut self) -> &mut Vec<super::RcBoxedBingusSetting>;
 
-    fn get_enabled(&self) -> BoxedBingusSetting;
+    fn get_enabled(&self) -> RcBoxedBingusSetting;
 
-    fn get_enabled_mut(&mut self) -> &mut BoxedBingusSetting;
+    fn get_enabled_mut(&mut self) -> &mut RcBoxedBingusSetting;
 
     fn to_name(&self) -> &'static str;
 }

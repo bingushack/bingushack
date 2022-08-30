@@ -6,7 +6,7 @@ use super::{
     BingusSetting,
     SettingValue,
     BingusModule,
-    BoxedBingusSetting,
+    RcBoxedBingusSetting,
     MemTrait,
 };
 use std::rc::Rc;
@@ -16,8 +16,8 @@ use crate::client::setting::BooleanSetting;
 
 pub struct AutoTotem {
     // todo make this enabled settings boilerplate shit a proc macro
-    enabled: BoxedBingusSetting,
-    settings: Vec<BoxedBingusSetting>,
+    enabled: RcBoxedBingusSetting,
+    settings: Vec<RcBoxedBingusSetting>,
 }
 
 impl BingusModule for AutoTotem {
@@ -243,15 +243,15 @@ impl BingusModule for AutoTotem {
 
     fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {  }
 
-    fn get_settings_mut(&mut self) -> &mut Vec<BoxedBingusSetting> {
+    fn get_settings_mut(&mut self) -> &mut Vec<RcBoxedBingusSetting> {
         &mut self.settings
     }
 
-    fn get_enabled(&self) -> BoxedBingusSetting {
-        self.enabled
+    fn get_enabled(&self) -> RcBoxedBingusSetting {
+        self.enabled.clone()
     }
 
-    fn get_enabled_mut(&mut self) -> &mut BoxedBingusSetting {
+    fn get_enabled_mut(&mut self) -> &mut RcBoxedBingusSetting {
         &mut self.enabled
     }
 

@@ -1,11 +1,13 @@
 use crate::client::setting::BingusSetting;
 use crate::client::setting::SettingValue;
+use crate::client::RcBoxedBingusSetting;
+use std::rc::Rc;
 
 pub struct BooleanSetting(bool);
 
 impl BingusSetting for BooleanSetting {
-    fn new_boxed(value: SettingValue) -> Box<dyn BingusSetting> where Self: Sized {
-        Box::new(BooleanSetting(value.try_into().unwrap()))
+    fn new_boxed(value: SettingValue) -> RcBoxedBingusSetting where Self: Sized {
+        Rc::new(Box::new(BooleanSetting(value.try_into().unwrap())))
     }
 
     fn get_value(&self) -> SettingValue {

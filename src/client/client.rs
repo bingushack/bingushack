@@ -8,7 +8,7 @@ use crate::client::setting::BingusSetting;
 
 
 
-pub type BoxedBingusSetting = Box<dyn BingusSetting>;
+pub type RcBoxedBingusSetting = Rc<Box<dyn BingusSetting>>;
 
 
 pub struct Client {
@@ -34,7 +34,7 @@ impl Client {
                 AutoTotem::new_boxed(),
             ],
 
-            env,
+            env: env.clone(),
 
             mappings_manager: Rc::new(MappingsManager::new(env)),
         }
@@ -43,7 +43,7 @@ impl Client {
     pub fn client_tick(&mut self) {
         if let Ok(message) = self.rx.try_recv() {
             match message {
-                ClickGuiMessage::RunModule(module) => module.tick(self.env.clone(), self.mappings_manager.clone()),
+                ClickGuiMessage::RunModule(mut module) => module.tick(self.env.clone(), self.mappings_manager.clone()),
                 _ => {}
             }
         }
