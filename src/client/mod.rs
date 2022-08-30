@@ -1,8 +1,10 @@
-mod module;
-mod setting;
+pub mod module;
+pub mod setting;
+
 mod client;
 mod mapping;
-mod modules_enum;
 
-pub use self::client::*;
-pub use self::modules_enum::Modules;
+pub use self::client::{
+    Client,
+    BoxedBingusSetting
+};

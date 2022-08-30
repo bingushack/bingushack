@@ -1,3 +1,3 @@
 pub enum ClickGuiMessage {
-    RunModule(crate::client::Modules),
+    RunModule(Box<dyn crate::client::module::BingusModule>),
 }

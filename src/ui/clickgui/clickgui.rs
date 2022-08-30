@@ -2,7 +2,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use super::{
     clickgui_message::ClickGuiMessage,
 };
-use crate::client::{Client, Modules};
+use crate::client::Client;
 use jni::JNIEnv;
 use crate::ui::widgets::module_widget;
 
@@ -13,12 +13,12 @@ static mut ENABLED: bool = false;
 
 
 
-pub fn init_clickgui<'c>(jni_env: JNIEnv<'static>) -> (ClickGui<'c>, Sender<ClickGuiMessage>) {
+pub fn init_clickgui(jni_env: JNIEnv<'static>) -> (ClickGui, Sender<ClickGuiMessage>) {
     let (ntx, nrx) = std::sync::mpsc::channel();
     (ClickGui::new(jni_env, nrx), ntx)
 }
 
-pub fn run_clickgui(app: ClickGui<'static>) {
+pub fn run_clickgui(app: ClickGui) {
     if unsafe { ENABLED } {
         return;
     }
@@ -33,17 +33,15 @@ pub fn run_clickgui(app: ClickGui<'static>) {
     unsafe { ENABLED = false; }
 }
 
-pub struct ClickGui<'c> {
+pub struct ClickGui {
     rx: Receiver<ClickGuiMessage>,
 
     // sender to the client itself
     client_sender: Sender<ClickGuiMessage>,
-    client: Client<'c>,
-
-    modules: Vec<Modules>,
+    client: Client,
 }
 
-impl ClickGui<'_> {
+impl ClickGui {
     pub fn new(jni_env: JNIEnv<'static>, rx: Receiver<ClickGuiMessage>) -> Self {
         let (client_sender, client_receiver) = std::sync::mpsc::channel();
         let client = Client::new(jni_env, client_receiver, client_sender.clone());
@@ -51,11 +49,6 @@ impl ClickGui<'_> {
             rx,
             client_sender,
             client,
-
-            // prolly a better way to do this with hashmaps/hashsets in the future
-            modules: vec![
-                Modules::AutoTotem(false, vec![]),
-            ],
         }
     }
 
@@ -64,9 +57,10 @@ impl ClickGui<'_> {
     }
 }
 
-impl eframe::App for ClickGui<'_> {
+impl eframe::App for ClickGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
+            /*
             for mut module in self.modules.iter_mut() {
 
                 ui.add(module_widget(&mut module));
@@ -78,6 +72,7 @@ impl eframe::App for ClickGui<'_> {
 
 
             self.client.client_tick();
+            */
         });
     }
 }
