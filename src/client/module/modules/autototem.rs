@@ -26,7 +26,7 @@ impl BingusModule for AutoTotem {
     fn new_boxed() -> BoxedBingusModule {
         Box::new(
             Self {
-                enabled: Rc::new(RefCell::new(BooleanSetting::new_rc_boxed(SettingValue::from(true)))),
+                enabled: Rc::new(RefCell::new(BooleanSetting::new_rc_boxed(SettingValue::from(false)))),
                 settings: Rc::new(vec![])
             }
         )
@@ -81,7 +81,7 @@ impl BingusModule for AutoTotem {
             item_stack.apply_object(offhand_stack_object);
 
             // man i need macros
-            let get_item_method = item_stack.get_method("getItem").unwrap();
+            let get_item_method = item_stack.get_method("getItem").unwrap();  // crashes
             let offhand_item_object: JObject<'_> = env.call_method(
                 item_stack.get_object().unwrap(),
                 get_item_method.get_name(),
