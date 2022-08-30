@@ -193,10 +193,10 @@ impl<'j> MappingsManager<'j> {
             "ItemStack",
             "buw",
             {
-                add_field!(
+                add_method!(
                     "getItem",
                     "c",
-                    "Lbus;",
+                    "()Lbus;",
                     false
                 );
             }
@@ -206,7 +206,7 @@ impl<'j> MappingsManager<'j> {
             "Item",
             "bus",
             {
-                add_field!(
+                add_method!(
                     "getRawId",
                     "a",
                     "(Lbus;)I",
