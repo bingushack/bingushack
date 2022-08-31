@@ -7,7 +7,7 @@ use jni::JNIEnv;
 use crate::ui::widgets::module_widget;
 use crate::client::module::{
     BingusModule,
-    modules::AutoTotem
+    modules::*
 };
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -60,6 +60,11 @@ impl ClickGui {
             client,
             modules: vec![
                 Rc::new(RefCell::new(AutoTotem::new_boxed())),
+
+                Rc::new(RefCell::new(TestModule::new_boxed())),
+                Rc::new(RefCell::new(TestModule::new_boxed())),
+                Rc::new(RefCell::new(TestModule::new_boxed())),
+                Rc::new(RefCell::new(TestModule::new_boxed())),
             ],
         }
     }
