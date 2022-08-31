@@ -81,7 +81,7 @@ impl BingusModule for AutoTotem {
             item_stack.apply_object(offhand_stack_object);
 
             // man i need macros
-            let get_item_method = item_stack.get_method("getItem").unwrap();  // crashes
+            let get_item_method = item_stack.get_method("getItem").unwrap();
             let offhand_item_object: JObject<'_> = env.call_method(
                 item_stack.get_object().unwrap(),
                 get_item_method.get_name(),
