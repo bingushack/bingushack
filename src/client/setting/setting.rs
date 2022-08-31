@@ -1,6 +1,7 @@
 use crate::client::BoxedBingusSetting;
 
 // todo implement From trait for BingusSetting
+// todo give Settings names
 pub trait BingusSetting {
     fn new_boxed(value: SettingValue) -> BoxedBingusSetting where Self: Sized;
 
