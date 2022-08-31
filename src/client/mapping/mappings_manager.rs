@@ -157,7 +157,7 @@ impl<'j> MappingsManager<'j> {
                 add_field!(
                     "syncId",
                     "j",
-                    "I;",
+                    "I",
                     false
                 );
             }
