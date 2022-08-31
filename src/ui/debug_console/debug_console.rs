@@ -31,6 +31,9 @@ pub struct DebugConsole {
     text: Vec<String>,
     rx: Receiver<String>,
     tx: Sender<String>,
+
+    test1: f64,
+    test2: f64,
 }
 
 impl DebugConsole {
@@ -39,6 +42,9 @@ impl DebugConsole {
             text: vec![String::from("")],
             rx,
             tx,
+
+            test1: 2.0,
+            test2: 10.0,
         }
     }
 }
@@ -49,6 +55,12 @@ impl eframe::App for DebugConsole {
             if let Ok(text) = self.rx.try_recv() {
                 self.text.insert(0, text);
             }
+
+            ui.add(egui::Slider::new(
+                &mut self.test1,
+                Some(&mut self.test2),
+                0.0..=100.0,
+            ));
 
             ui.hyperlink("http://bingushack.cc");
 
