@@ -42,7 +42,8 @@ pub fn message_box(text: &str) {
 
 unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
-    // check hwid
+    // check hwid, only on release
+    #[cfg(not(build="debug"))]
     if obfstr::obfstr!(env!("HWID")) != {
         use uniqueid::{IdentifierBuilder, IdentifierType};
 
