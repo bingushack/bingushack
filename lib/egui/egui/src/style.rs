@@ -866,7 +866,7 @@ impl Style {
 
             ui.label("Animation duration:");
             ui.add(
-                Slider::new(animation_time, 0.0..=1.0)
+                Slider::new(animation_time, None, 0.0..=1.0)
                     .clamp_to_range(true)
                     .suffix(" s"),
             );
@@ -1018,9 +1018,9 @@ impl Interaction {
             resize_grab_radius_corner,
             show_tooltips_only_when_still,
         } = self;
-        ui.add(Slider::new(resize_grab_radius_side, 0.0..=20.0).text("resize_grab_radius_side"));
+        ui.add(Slider::new(resize_grab_radius_side, None, 0.0..=20.0).text("resize_grab_radius_side"));
         ui.add(
-            Slider::new(resize_grab_radius_corner, 0.0..=20.0).text("resize_grab_radius_corner"),
+            Slider::new(resize_grab_radius_corner, None, 0.0..=20.0).text("resize_grab_radius_corner"),
         );
         ui.checkbox(
             show_tooltips_only_when_still,
@@ -1092,7 +1092,7 @@ impl WidgetVisuals {
         rounding_ui(ui, rounding);
 
         stroke_ui(ui, fg_stroke, "foreground stroke (text)");
-        ui.add(Slider::new(expansion, -5.0..=5.0).text("expansion"))
+        ui.add(Slider::new(expansion, None, -5.0..=5.0).text("expansion"))
             .on_hover_text("make shapes this much larger");
     }
 }
@@ -1190,10 +1190,10 @@ impl Visuals {
         });
 
         ui_color(ui, hyperlink_color, "hyperlink_color");
-        ui.add(Slider::new(resize_corner_size, 0.0..=20.0).text("resize_corner_size"));
-        ui.add(Slider::new(text_cursor_width, 0.0..=4.0).text("text_cursor_width"));
+        ui.add(Slider::new(resize_corner_size, None, 0.0..=20.0).text("resize_corner_size"));
+        ui.add(Slider::new(text_cursor_width, None, 0.0..=4.0).text("text_cursor_width"));
         ui.checkbox(text_cursor_preview, "Preview text cursor on hover");
-        ui.add(Slider::new(clip_rect_margin, 0.0..=20.0).text("clip_rect_margin"));
+        ui.add(Slider::new(clip_rect_margin, None, 0.0..=20.0).text("clip_rect_margin"));
 
         ui.checkbox(button_frame, "Button has a frame");
         ui.checkbox(collapsing_header_frame, "Collapsing header has a frame");
@@ -1270,13 +1270,13 @@ fn rounding_ui(ui: &mut Ui, rounding: &mut Rounding) {
 
         if same {
             let mut cr = rounding.nw;
-            ui.add(Slider::new(&mut cr, 0.0..=MAX));
+            ui.add(Slider::new(&mut cr, None, 0.0..=MAX));
             *rounding = Rounding::same(cr);
         } else {
-            ui.add(Slider::new(&mut rounding.nw, 0.0..=MAX).text("North-West"));
-            ui.add(Slider::new(&mut rounding.ne, 0.0..=MAX).text("North-East"));
-            ui.add(Slider::new(&mut rounding.sw, 0.0..=MAX).text("South-West"));
-            ui.add(Slider::new(&mut rounding.se, 0.0..=MAX).text("South-East"));
+            ui.add(Slider::new(&mut rounding.nw, None, 0.0..=MAX).text("North-West"));
+            ui.add(Slider::new(&mut rounding.ne, None, 0.0..=MAX).text("North-East"));
+            ui.add(Slider::new(&mut rounding.sw, None, 0.0..=MAX).text("South-West"));
+            ui.add(Slider::new(&mut rounding.se, None, 0.0..=MAX).text("South-East"));
             if rounding.is_same() {
                 rounding.se *= 1.00001;
             }

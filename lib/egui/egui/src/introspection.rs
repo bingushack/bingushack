@@ -14,7 +14,7 @@ pub fn font_family_ui(ui: &mut Ui, font_family: &mut FontFamily) {
 pub fn font_id_ui(ui: &mut Ui, font_id: &mut FontId) {
     let families = ui.fonts().families();
     ui.horizontal(|ui| {
-        ui.add(Slider::new(&mut font_id.size, 4.0..=40.0).max_decimals(0));
+        ui.add(Slider::new(&mut font_id.size, None, 4.0..=40.0).max_decimals(0));
         for alternative in families {
             let text = alternative.to_string();
             ui.radio_value(&mut font_id.family, alternative, text);
@@ -152,14 +152,14 @@ impl Widget for &mut epaint::TessellationOptions {
 
             ui.checkbox(feathering, "Feathering (antialias)")
                 .on_hover_text("Apply feathering to smooth out the edges of shapes. Turn off for small performance gain.");
-            let feathering_slider = crate::Slider::new(feathering_size_in_pixels, 0.0..=10.0)
+            let feathering_slider = crate::Slider::new(feathering_size_in_pixels, None, 0.0..=10.0)
                 .smallest_positive(0.1)
                 .logarithmic(true)
                 .text("Feathering size in pixels");
             ui.add_enabled(*feathering, feathering_slider);
 
             ui.add(
-                crate::widgets::Slider::new(bezier_tolerance, 0.0001..=10.0)
+                crate::widgets::Slider::new(bezier_tolerance, None, 0.0001..=10.0)
                     .logarithmic(true)
                     .show_value(true)
                     .text("Spline Tolerance"),
