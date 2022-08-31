@@ -11,18 +11,14 @@ use super::{
 pub struct TestModule {
     enabled: SettingType,
     settings: Rc<Vec<SettingType>>,
-
-    name: String,
 }
 
 impl BingusModule for TestModule {
-    fn new_boxed(name: &str) -> BoxedBingusModule {
+    fn new_boxed() -> BoxedBingusModule {
         Box::new(
             Self {
                 enabled: Rc::new(RefCell::new(BooleanSetting::new_boxed(SettingValue::from(false)))),
                 settings: Rc::new(vec![]),
-
-                name: name.to_string(),
             }
         )
     }
@@ -46,6 +42,7 @@ impl BingusModule for TestModule {
     }
 
     fn to_name(&self) -> &'static str {
-        self.name.as_str()
+        // shittiest way to make a non-crytpographicly secure number
+        ((&vec![2, 3] as *const Vec<i32>) as usize) % 10000
     }
 }
