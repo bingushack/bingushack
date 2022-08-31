@@ -2,9 +2,18 @@ use std::sync::mpsc::{Receiver, Sender};
 use super::{
     clickgui_message::ClickGuiMessage,
 };
-use crate::client::{Client, Modules};
+use crate::client::{Client, BoxedBingusModule};
 use jni::JNIEnv;
 use crate::ui::widgets::module_widget;
+use crate::client::module::{
+    BingusModule,
+    modules::AutoTotem
+};
+use std::rc::Rc;
+use std::cell::{
+    RefCell,
+    Ref,
+};
 
 use eframe::egui;
 
@@ -13,12 +22,12 @@ static mut ENABLED: bool = false;
 
 
 
-pub fn init_clickgui<'c>(jni_env: JNIEnv<'static>) -> (ClickGui<'c>, Sender<ClickGuiMessage>) {
+pub fn init_clickgui(jni_env: JNIEnv<'static>) -> (ClickGui, Sender<ClickGuiMessage>) {
     let (ntx, nrx) = std::sync::mpsc::channel();
     (ClickGui::new(jni_env, nrx), ntx)
 }
 
-pub fn run_clickgui(app: ClickGui<'static>) {
+pub fn run_clickgui(app: ClickGui) {
     if unsafe { ENABLED } {
         return;
     }
@@ -33,17 +42,18 @@ pub fn run_clickgui(app: ClickGui<'static>) {
     unsafe { ENABLED = false; }
 }
 
-pub struct ClickGui<'c> {
+pub struct ClickGui {
     rx: Receiver<ClickGuiMessage>,
 
     // sender to the client itself
     client_sender: Sender<ClickGuiMessage>,
-    client: Client<'c>,
+    client: Client,  // why does the ClickGui contain the Client and not the other way around????
 
-    modules: Vec<Modules>,
+    // prolly a better way to do this with hashmaps/hashsets in the future
+    modules: Vec<Rc<RefCell<BoxedBingusModule>>>,
 }
 
-impl ClickGui<'_> {
+impl ClickGui {
     pub fn new(jni_env: JNIEnv<'static>, rx: Receiver<ClickGuiMessage>) -> Self {
         let (client_sender, client_receiver) = std::sync::mpsc::channel();
         let client = Client::new(jni_env, client_receiver, client_sender.clone());
@@ -51,10 +61,8 @@ impl ClickGui<'_> {
             rx,
             client_sender,
             client,
-
-            // prolly a better way to do this with hashmaps/hashsets in the future
             modules: vec![
-                Modules::AutoTotem(false, vec![]),
+                Rc::new(RefCell::new(AutoTotem::new_boxed())),
             ],
         }
     }
@@ -64,15 +72,18 @@ impl ClickGui<'_> {
     }
 }
 
-impl eframe::App for ClickGui<'_> {
+impl eframe::App for ClickGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
-            for mut module in self.modules.iter_mut() {
 
-                ui.add(module_widget(&mut module));
+            for module in self.modules.iter() {
 
-                if module.get_enabled() {
-                    self.client_sender.send(ClickGuiMessage::RunModule(module.clone())).unwrap();
+                ui.add(module_widget(&module.borrow()));
+
+                if module.borrow().get_enabled_ref_cell().borrow().get_value().try_into().unwrap() {
+                    self.client_sender.send(ClickGuiMessage::RunModule(
+                        Rc::clone(module)
+                    )).unwrap();
                 }
             }
 

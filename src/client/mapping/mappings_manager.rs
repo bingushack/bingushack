@@ -1,8 +1,10 @@
 use crate::client::mapping::CM;
 use std::collections::HashMap;
 use jni::JNIEnv;
+use std::rc::Rc;
 
 
+// todo make all the static stuff truly static with a Once and shit so i dont get them all repeatedly
 
 
 #[derive(Debug, Default)]
@@ -11,7 +13,7 @@ pub struct MappingsManager<'a> {
 }
 
 impl<'j> MappingsManager<'j> {
-    pub fn new(jni_env: JNIEnv<'j>) -> MappingsManager<'j> {
+    pub fn new(jni_env: Rc<JNIEnv<'j>>) -> MappingsManager<'j> {
         macro_rules! adds {
             ($cm:ident) => {
                 macro_rules! add_field {
@@ -155,7 +157,7 @@ impl<'j> MappingsManager<'j> {
                 add_field!(
                     "syncId",
                     "j",
-                    "I;",
+                    "I",
                     false
                 );
             }
@@ -191,10 +193,10 @@ impl<'j> MappingsManager<'j> {
             "ItemStack",
             "buw",
             {
-                add_field!(
+                add_method!(
                     "getItem",
                     "c",
-                    "Lbus;",
+                    "()Lbus;",
                     false
                 );
             }
@@ -204,7 +206,7 @@ impl<'j> MappingsManager<'j> {
             "Item",
             "bus",
             {
-                add_field!(
+                add_method!(
                     "getRawId",
                     "a",
                     "(Lbus;)I",

@@ -1,3 +1,6 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+
 pub enum ClickGuiMessage {
-    RunModule(crate::client::Modules),
+    RunModule(Rc<RefCell<Box<dyn crate::client::module::BingusModule>>>),
 }

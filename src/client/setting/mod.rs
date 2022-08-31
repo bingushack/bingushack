@@ -1,4 +1,5 @@
 mod setting;
 mod settings;
 
-use self::setting::*;
+pub use self::setting::*;
+pub use self::settings::*;
