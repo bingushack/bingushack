@@ -43,6 +43,6 @@ impl BingusModule for TestModule {
 
     fn to_name(&self) -> &'static str {
         // shittiest way to make a non-crytpographicly secure number
-        ((&vec![2, 3] as *const Vec<i32>) as usize) % 10000
+        &*String::from(((&vec![2, 3] as *const Vec<i32>) as usize) % 10000)
     }
 }
