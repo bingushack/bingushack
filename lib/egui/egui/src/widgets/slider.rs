@@ -60,7 +60,7 @@ pub enum SliderOrientation {
 /// The default [`Slider`] size is set by [`crate::style::Spacing::slider_width`].
 #[must_use = "You should put this widget in an ui with `ui.add(widget);`"]
 pub struct Slider<'a> {
-    get_set_values: Vec<GetSetValue<'a>>,
+    get_set_value: GetSetValue<'a>,
     range: RangeInclusive<f64>,
     spec: SliderSpec,
     clamp_to_range: bool,
@@ -79,24 +79,13 @@ pub struct Slider<'a> {
 
 impl<'a> Slider<'a> {
     /// Creates a new horizontal slider.
-    pub fn new<Num: emath::Numeric>(value: &'a mut Num, second_handle: Option<&'a mut Num>, range: RangeInclusive<Num>) -> Self {
+    pub fn new<Num: emath::Numeric>(value: &'a mut Num, range: RangeInclusive<Num>) -> Self {
         let range_f64 = range.start().to_f64()..=range.end().to_f64();
         let slf = Self::from_get_set(range_f64, move |v: Option<f64>| {
             if let Some(v) = v {
                 *value = Num::from_f64(v);
             }
             value.to_f64()
-        }, {
-            if let Some(v) = second_handle {
-                Some(move |vb: Option<f64>| {
-                    if let Some(vc) = vb {
-                        *v = Num::from_f64(vc);
-                    }
-                    v.to_f64()
-                })
-            } else {
-                None
-            }
         });
 
         if Num::INTEGRAL {
@@ -109,16 +98,9 @@ impl<'a> Slider<'a> {
     pub fn from_get_set(
         range: RangeInclusive<f64>,
         get_set_value: impl 'a + FnMut(Option<f64>) -> f64,
-        get_set_value_optional: Option<impl 'a + FnMut(Option<f64>) -> f64>,
     ) -> Self {
         Self {
-            get_set_values: {
-                let mut ret_vec: Vec<Box<(dyn FnMut(Option<f64>) -> f64 + 'a)>> = vec![Box::new(get_set_value)];
-                if let Some(v) = get_set_value_optional {
-                    ret_vec.push(Box::new(v));
-                }
-                ret_vec
-            },
+            get_set_value: Box::new(get_set_value),
             range,
             spec: SliderSpec {
                 logarithmic: false,
@@ -266,8 +248,8 @@ impl<'a> Slider<'a> {
         self.fixed_decimals(0).smallest_positive(1.0)
     }
 
-    fn get_value(&mut self, i: usize) -> f64 {
-        let value = get(&mut self.get_set_values[i]);
+    fn get_value(&mut self) -> f64 {
+        let value = get(&mut self.get_set_value);
         if self.clamp_to_range {
             let start = *self.range.start();
             let end = *self.range.end();
@@ -277,7 +259,7 @@ impl<'a> Slider<'a> {
         }
     }
 
-    fn set_value(&mut self, mut value: f64, i: usize) {
+    fn set_value(&mut self, mut value: f64) {
         if self.clamp_to_range {
             let start = *self.range.start();
             let end = *self.range.end();
@@ -289,7 +271,7 @@ impl<'a> Slider<'a> {
         if let Some(step) = self.step {
             value = (value / step).round() * step;
         }
-        set(&mut self.get_set_values[i], value);
+        set(&mut self.get_set_value, value);
     }
 
     fn clamp_range(&self) -> RangeInclusive<f64> {
@@ -328,96 +310,92 @@ impl<'a> Slider<'a> {
 
     /// Just the slider, no text
     fn slider_ui(&mut self, ui: &mut Ui, response: &Response) {
-        for i in 0..self.get_set_values.len() {
-            let rect = &response.rect;
-            let position_range = self.position_range(rect);
+        let rect = &response.rect;
+        let position_range = self.position_range(rect);
 
+        if let Some(pointer_position_2d) = response.interact_pointer_pos() {
+            let position = self.pointer_position(pointer_position_2d);
+            let new_value = if self.smart_aim {
+                let aim_radius = ui.input().aim_radius();
+                emath::smart_aim::best_in_range_f64(
+                    self.value_from_position(position - aim_radius, position_range.clone()),
+                    self.value_from_position(position + aim_radius, position_range.clone()),
+                )
+            } else {
+                self.value_from_position(position, position_range.clone())
+            };
+            self.set_value(new_value);
+        }
 
-            if let Some(pointer_position_2d) = response.interact_pointer_pos() {
-                let position = self.pointer_position(pointer_position_2d);
-                let new_value = if self.smart_aim {
-                    let aim_radius = ui.input().aim_radius();
-                    emath::smart_aim::best_in_range_f64(
-                        self.value_from_position(position - aim_radius, position_range.clone()),
-                        self.value_from_position(position + aim_radius, position_range.clone()),
-                    )
-                } else {
-                    self.value_from_position(position, position_range.clone())
+        let value = self.get_value();
+        response.widget_info(|| WidgetInfo::slider(value, &self.text));
+
+        if response.has_focus() {
+            let (dec_key, inc_key) = match self.orientation {
+                SliderOrientation::Horizontal => (Key::ArrowLeft, Key::ArrowRight),
+                // Note that this is for moving the slider position,
+                // so up = decrement y coordinate:
+                SliderOrientation::Vertical => (Key::ArrowUp, Key::ArrowDown),
+            };
+
+            let decrement = ui.input().num_presses(dec_key);
+            let increment = ui.input().num_presses(inc_key);
+            let kb_step = increment as f32 - decrement as f32;
+
+            if kb_step != 0.0 {
+                let prev_value = self.get_value();
+                let prev_position = self.position_from_value(prev_value, position_range.clone());
+                let new_position = prev_position + kb_step;
+                let new_value = match self.step {
+                    Some(step) => prev_value + (kb_step as f64 * step),
+                    None if self.smart_aim => {
+                        let aim_radius = ui.input().aim_radius();
+                        emath::smart_aim::best_in_range_f64(
+                            self.value_from_position(
+                                new_position - aim_radius,
+                                position_range.clone(),
+                            ),
+                            self.value_from_position(
+                                new_position + aim_radius,
+                                position_range.clone(),
+                            ),
+                        )
+                    }
+                    _ => self.value_from_position(new_position, position_range.clone()),
                 };
-                self.set_value(new_value, i);
+                self.set_value(new_value);
             }
+        }
 
+        // Paint it:
+        if ui.is_rect_visible(response.rect) {
+            let value = self.get_value();
 
-            let value = self.get_value(i);
-            // L accessibility
+            let rail_radius = ui.painter().round_to_pixel(self.rail_radius_limit(rect));
+            let rail_rect = self.rail_rect(rect, rail_radius);
 
-            if response.has_focus() {
-                let (dec_key, inc_key) = match self.orientation {
-                    SliderOrientation::Horizontal => (Key::ArrowLeft, Key::ArrowRight),
-                    // Note that this is for moving the slider position,
-                    // so up = decrement y coordinate:
-                    SliderOrientation::Vertical => (Key::ArrowUp, Key::ArrowDown),
-                };
+            let position_1d = self.position_from_value(value, position_range);
 
-                let decrement = ui.input().num_presses(dec_key);
-                let increment = ui.input().num_presses(inc_key);
-                let kb_step = increment as f32 - decrement as f32;
+            let visuals = ui.style().interact(response);
+            ui.painter().add(epaint::RectShape {
+                rect: rail_rect,
+                rounding: ui.visuals().widgets.inactive.rounding,
+                fill: ui.visuals().widgets.inactive.bg_fill,
+                // fill: visuals.bg_fill,
+                // fill: ui.visuals().extreme_bg_color,
+                stroke: Default::default(),
+                // stroke: visuals.bg_stroke,
+                // stroke: ui.visuals().widgets.inactive.bg_stroke,
+            });
 
-                if kb_step != 0.0 {
-                    let prev_value = self.get_value(i);
-                    let prev_position = self.position_from_value(prev_value, position_range.clone());
-                    let new_position = prev_position + kb_step;
-                    let new_value = match self.step {
-                        Some(step) => prev_value + (kb_step as f64 * step),
-                        None if self.smart_aim => {
-                            let aim_radius = ui.input().aim_radius();
-                            emath::smart_aim::best_in_range_f64(
-                                self.value_from_position(
-                                    new_position - aim_radius,
-                                    position_range.clone(),
-                                ),
-                                self.value_from_position(
-                                    new_position + aim_radius,
-                                    position_range.clone(),
-                                ),
-                            )
-                        }
-                        _ => self.value_from_position(new_position, position_range.clone()),
-                    };
-                    self.set_value(new_value, i);
-                }
-            }
+            let center = self.marker_center(position_1d, &rail_rect);
 
-            // Paint it:
-            if ui.is_rect_visible(response.rect) {
-                let value = self.get_value(i);
-
-                let rail_radius = ui.painter().round_to_pixel(self.rail_radius_limit(rect));
-                let rail_rect = self.rail_rect(rect, rail_radius);
-
-                let position_1d = self.position_from_value(value, position_range);
-
-                let visuals = ui.style().interact(response);
-                ui.painter().add(epaint::RectShape {
-                    rect: rail_rect,
-                    rounding: ui.visuals().widgets.inactive.rounding,
-                    fill: ui.visuals().widgets.inactive.bg_fill,
-                    // fill: visuals.bg_fill,
-                    // fill: ui.visuals().extreme_bg_color,
-                    stroke: Default::default(),
-                    // stroke: visuals.bg_stroke,
-                    // stroke: ui.visuals().widgets.inactive.bg_stroke,
-                });
-
-                let center = self.marker_center(position_1d, &rail_rect);
-
-                ui.painter().add(epaint::CircleShape {
-                    center,
-                    radius: self.handle_radius(rect) + visuals.expansion,
-                    fill: visuals.bg_fill,
-                    stroke: visuals.fg_stroke,
-                });
-            }
+            ui.painter().add(epaint::CircleShape {
+                center,
+                radius: self.handle_radius(rect) + visuals.expansion,
+                fill: visuals.bg_fill,
+                stroke: visuals.fg_stroke,
+            });
         }
     }
 
@@ -489,46 +467,32 @@ impl<'a> Slider<'a> {
             Some(step) if change != 0 => step,
             _ => self.current_gradient(&position_range),
         };
-        let mut ret_response: Option<Response> = None;
-        for i in 0..self.get_set_values.len() {
-            let mut value = self.get_value(i);
-            let response = ui.add(
-                DragValue::new(&mut value)
-                    .speed(speed)
-                    .clamp_range(self.clamp_range())
-                    .min_decimals(self.min_decimals)
-                    .max_decimals_opt(self.max_decimals)
-                    .suffix(self.suffix.clone())
-                    .prefix(self.prefix.clone()),
-            );
-            if value != self.get_value(i) {
-                self.set_value(value, i);
-            }
-
-            if ret_response.is_some() {
-                ret_response = Some(response.union(ret_response.as_ref().unwrap().clone()));
-            } else {
-                ret_response = Some(response);
-            }
+        let mut value = self.get_value();
+        let response = ui.add(
+            DragValue::new(&mut value)
+                .speed(speed)
+                .clamp_range(self.clamp_range())
+                .min_decimals(self.min_decimals)
+                .max_decimals_opt(self.max_decimals)
+                .suffix(self.suffix.clone())
+                .prefix(self.prefix.clone()),
+        );
+        if value != self.get_value() {
+            self.set_value(value);
         }
-        
-        ret_response.unwrap()
+        response
     }
 
     /// delta(value) / delta(points)
     fn current_gradient(&mut self, position_range: &RangeInclusive<f32>) -> f64 {
         // TODO: handle clamping
-        let mut ret = 0.0;
-        for i in 0..self.get_set_values.len() {
-            let value = self.get_value(i);
-            let value_from_pos =
-                |position: f32| self.value_from_position(position, position_range.clone());
-            let pos_from_value = |value: f64| self.position_from_value(value, position_range.clone());
-            let left_value = value_from_pos(pos_from_value(value) - 0.5);
-            let right_value = value_from_pos(pos_from_value(value) + 0.5);
-            ret += right_value - left_value
-        }
-        ret / self.get_set_values.len() as f64
+        let value = self.get_value();
+        let value_from_pos =
+            |position: f32| self.value_from_position(position, position_range.clone());
+        let pos_from_value = |value: f64| self.position_from_value(value, position_range.clone());
+        let left_value = value_from_pos(pos_from_value(value) - 0.5);
+        let right_value = value_from_pos(pos_from_value(value) + 0.5);
+        right_value - left_value
     }
 
     fn add_contents(&mut self, ui: &mut Ui) -> Response {
@@ -566,18 +530,15 @@ impl<'a> Slider<'a> {
 
 impl<'a> Widget for Slider<'a> {
     fn ui(mut self, ui: &mut Ui) -> Response {
+        let old_value = self.get_value();
+
         let inner_response = match self.orientation {
             SliderOrientation::Horizontal => ui.horizontal(|ui| self.add_contents(ui)),
             SliderOrientation::Vertical => ui.vertical(|ui| self.add_contents(ui)),
         };
+
         let mut response = inner_response.inner | inner_response.response;
-
-        for i in 0..self.get_set_values.len() {
-            let old_value = self.get_value(i);
-
-            response.changed = self.get_value(i) != old_value || response.changed;
-        }
-
+        response.changed = self.get_value() != old_value;
         response
     }
 }
