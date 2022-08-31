@@ -26,7 +26,7 @@ impl BingusModule for AutoTotem {
     fn new_boxed() -> BoxedBingusModule {
         Box::new(
             Self {
-                enabled: Rc::new(RefCell::new(BooleanSetting::new_rc_boxed(SettingValue::from(false)))),
+                enabled: Rc::new(RefCell::new(BooleanSetting::new_boxed(SettingValue::from(false)))),
                 settings: Rc::new(vec![])
             }
         )

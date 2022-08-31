@@ -2,7 +2,7 @@ use crate::client::BoxedBingusSetting;
 
 // todo implement From trait for BingusSetting
 pub trait BingusSetting {
-    fn new_rc_boxed(value: SettingValue) -> BoxedBingusSetting where Self: Sized;
+    fn new_boxed(value: SettingValue) -> BoxedBingusSetting where Self: Sized;
 
     fn get_value(&self) -> SettingValue;
 

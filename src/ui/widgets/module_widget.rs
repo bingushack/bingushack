@@ -1,6 +1,9 @@
 use eframe::egui;
 use crate::client::module::BingusModule;
-use std::borrow::BorrowMut;
+use std::cell::{
+    RefCell,
+    RefMut
+};
 
 use super::toggle;
 
@@ -12,7 +15,9 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
 
     if ui.is_rect_visible(rect) {
         ui.horizontal(|ui| {
-            ui.add(toggle(&mut (*module.get_enabled_ref_cell()).borrow_mut().get_value().try_into().unwrap()));
+            ui.add(toggle(
+                module.get_enabled_ref_cell()
+            ));
 
             ui.collapsing(module.to_name(), |_ui| {
                 for _setting in &*module.get_settings_ref_cell() {

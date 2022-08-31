@@ -5,7 +5,7 @@ use crate::client::BoxedBingusSetting;
 pub struct BooleanSetting(bool);
 
 impl BingusSetting for BooleanSetting {
-    fn new_rc_boxed(value: SettingValue) -> BoxedBingusSetting where Self: Sized {
+    fn new_boxed(value: SettingValue) -> BoxedBingusSetting where Self: Sized {
         Box::new(BooleanSetting(value.try_into().unwrap()))
     }
 
