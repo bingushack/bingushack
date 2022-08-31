@@ -45,7 +45,7 @@ pub struct ClickGui {
     // sender to the client itself
     client_sender: Sender<ClickGuiMessage>,
     client: Client,  // why does the ClickGui contain the Client and not the other way around????
-
+    // why are the modules in the ClickGui wtf???
     // prolly a better way to do this with hashmaps/hashsets in the future
     modules: Vec<Rc<RefCell<BoxedBingusModule>>>,
 }
