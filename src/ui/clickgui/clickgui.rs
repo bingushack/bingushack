@@ -10,10 +10,7 @@ use crate::client::module::{
     modules::AutoTotem
 };
 use std::rc::Rc;
-use std::cell::{
-    RefCell,
-    Ref,
-};
+use std::cell::RefCell;
 
 use eframe::egui;
 

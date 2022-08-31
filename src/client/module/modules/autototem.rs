@@ -9,6 +9,7 @@ use super::{
     BoxedBingusSetting,
     BoxedBingusModule,
     MemTrait,
+    SettingType,
 };
 use std::rc::Rc;
 use std::cell::{RefCell, Ref};
@@ -18,8 +19,8 @@ use crate::client::setting::BooleanSetting;
 
 pub struct AutoTotem {
     // todo make this enabled settings boilerplate shit a proc macro
-    enabled: Rc<RefCell<BoxedBingusSetting>>,
-    settings: Rc<Vec<Rc<RefCell<BoxedBingusSetting>>>>,
+    enabled: SettingType,
+    settings: Rc<Vec<SettingType>>,
 }
 
 impl BingusModule for AutoTotem {
@@ -245,11 +246,11 @@ impl BingusModule for AutoTotem {
 
     fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {  }
 
-    fn get_settings_ref_cell(&self) -> Rc<Vec<Rc<RefCell<BoxedBingusSetting>>>> {
+    fn get_settings_ref_cell(&self) -> Rc<Vec<SettingType>> {
         Rc::clone(&self.settings)
     }
 
-    fn get_enabled_ref_cell(&self) -> Rc<RefCell<BoxedBingusSetting>> {
+    fn get_enabled_ref_cell(&self) -> SettingType {
         Rc::clone(&self.enabled)
     }
 

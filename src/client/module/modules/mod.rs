@@ -9,3 +9,4 @@ use super::{
     SettingValue
 };
 use crate::client::mapping::MemTrait;
+use super::SettingType;
