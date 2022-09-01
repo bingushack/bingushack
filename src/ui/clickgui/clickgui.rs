@@ -78,9 +78,11 @@ impl eframe::App for ClickGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
 
-            for module in self.modules.iter() {
+            for (i, module) in self.modules.iter().enumerate() {
 
-                ui.add(module_widget(&module.borrow()));
+                ui.push_id(i, |ui| {
+                    ui.add(module_widget(&module.borrow()));
+                });
 
                 if module.borrow().get_enabled_ref_cell().borrow().get_value().try_into().unwrap() {
                     self.client_sender.send(ClickGuiMessage::RunModule(
