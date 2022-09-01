@@ -16,6 +16,8 @@ use crate::client::setting::BooleanSetting;
 pub struct TestModule {
     enabled: SettingType,
     settings: Rc<Vec<SettingType>>,
+
+    name: String,
 }
 
 impl BingusModule for TestModule {
@@ -24,6 +26,8 @@ impl BingusModule for TestModule {
             Self {
                 enabled: Rc::new(RefCell::new(BooleanSetting::new_boxed(SettingValue::from(false)))),
                 settings: Rc::new(vec![]),
+
+                name: (((&vec![2, 3] as *const Vec<i32>) as usize) % 10000).to_string()
             }
         )
     }
@@ -48,6 +52,6 @@ impl BingusModule for TestModule {
 
     fn to_name(&self) -> String {
         // shittiest way to make a non-crytpographicly secure number
-        (((&vec![2, 3] as *const Vec<i32>) as usize) % 10000).to_string()
+        self.name.clone()
     }
 }
