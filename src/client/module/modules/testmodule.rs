@@ -7,6 +7,11 @@ use super::{
     MemTrait,
     SettingType,
 };
+use std::rc::Rc;
+use std::cell::RefCell;
+use crate::client::mapping::MappingsManager;
+use jni::JNIEnv;
+use crate::client::setting::BooleanSetting;
 
 pub struct TestModule {
     enabled: SettingType,
@@ -41,8 +46,8 @@ impl BingusModule for TestModule {
         Rc::clone(&self.enabled)
     }
 
-    fn to_name(&self) -> &'static str {
+    fn to_name(&self) -> String {
         // shittiest way to make a non-crytpographicly secure number
-        &*String::from(((&vec![2, 3] as *const Vec<i32>) as usize) % 10000)
+        (((&vec![2, 3] as *const Vec<i32>) as usize) % 10000).to_string()
     }
 }

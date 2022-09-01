@@ -254,7 +254,7 @@ impl BingusModule for AutoTotem {
         Rc::clone(&self.enabled)
     }
 
-    fn to_name(&self) -> &'static str {
-        "AutoTotem"
+    fn to_name(&self) -> String {
+        "AutoTotem".to_string()
     }
 }

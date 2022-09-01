@@ -26,5 +26,5 @@ pub trait BingusModule {
 
     fn get_enabled_ref_cell(&self) -> SettingType;
 
-    fn to_name(&self) -> &'static str;
+    fn to_name(&self) -> String;
 }
