@@ -11,3 +11,5 @@ use super::setting::{
     BingusSetting,
     SettingValue
 };
+
+type SettingType = ::std::rc::Rc<::std::cell::RefCell<BoxedBingusSetting>>;

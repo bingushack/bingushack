@@ -1,9 +1,5 @@
 use eframe::egui;
 use crate::client::module::BingusModule;
-use std::cell::{
-    RefCell,
-    RefMut
-};
 
 use super::toggle;
 

@@ -7,13 +7,10 @@ use jni::JNIEnv;
 use crate::ui::widgets::module_widget;
 use crate::client::module::{
     BingusModule,
-    modules::AutoTotem
+    modules::*
 };
 use std::rc::Rc;
-use std::cell::{
-    RefCell,
-    Ref,
-};
+use std::cell::RefCell;
 
 use eframe::egui;
 
@@ -48,7 +45,7 @@ pub struct ClickGui {
     // sender to the client itself
     client_sender: Sender<ClickGuiMessage>,
     client: Client,  // why does the ClickGui contain the Client and not the other way around????
-
+    // why are the modules in the ClickGui wtf???
     // prolly a better way to do this with hashmaps/hashsets in the future
     modules: Vec<Rc<RefCell<BoxedBingusModule>>>,
 }
@@ -63,6 +60,11 @@ impl ClickGui {
             client,
             modules: vec![
                 Rc::new(RefCell::new(AutoTotem::new_boxed())),
+
+                Rc::new(RefCell::new(TestModule::new_boxed())),
+                Rc::new(RefCell::new(TestModule::new_boxed())),
+                Rc::new(RefCell::new(TestModule::new_boxed())),
+                Rc::new(RefCell::new(TestModule::new_boxed())),
             ],
         }
     }
@@ -76,9 +78,11 @@ impl eframe::App for ClickGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
 
-            for module in self.modules.iter() {
+            for (i, module) in self.modules.iter().enumerate() {
 
-                ui.add(module_widget(&module.borrow()));
+                ui.push_id(i, |ui| {
+                    ui.add(module_widget(&module.borrow()));
+                });
 
                 if module.borrow().get_enabled_ref_cell().borrow().get_value().try_into().unwrap() {
                     self.client_sender.send(ClickGuiMessage::RunModule(
