@@ -1,8 +1,7 @@
 use super::{
-    BingusSetting,
+    BingusSettings,
     SettingValue,
     BingusModule,
-    BoxedBingusSetting,
     BoxedBingusModule,
     MemTrait,
     SettingType,
@@ -14,15 +13,15 @@ use jni::JNIEnv;
 use crate::client::setting::BooleanSetting;
 
 pub struct TestModule {
-    enabled: SettingType,
-    settings: Rc<Vec<SettingType>>,
+    enabled: Rc<RefCell<BingusSettings>>,
+    settings: Rc<Vec<Rc<RefCell<BingusSettings>>>>,
 }
 
 impl BingusModule for TestModule {
     fn new_boxed() -> BoxedBingusModule {
         Box::new(
             Self {
-                enabled: Rc::new(RefCell::new(BooleanSetting::new_boxed(SettingValue::from(false)))),
+                enabled: Rc::new(RefCell::new(BingusSettings::BooleanSetting(BooleanSetting::new(SettingValue::from(false), "enabled")))),
                 settings: Rc::new(vec![]),
             }
         )
@@ -38,11 +37,11 @@ impl BingusModule for TestModule {
 
     fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {  }
 
-    fn get_settings_ref_cell(&self) -> Rc<Vec<SettingType>> {
+    fn get_settings_ref_cell(&self) -> Rc<Vec<Rc<RefCell<BingusSettings>>>> {
         Rc::clone(&self.settings)
     }
 
-    fn get_enabled_ref_cell(&self) -> SettingType {
+    fn get_enabled_ref_cell(&self) -> Rc<RefCell<BingusSettings>> {
         Rc::clone(&self.enabled)
     }
 

@@ -5,10 +5,9 @@ pub use self::autototem::*;
 pub use self::testmodule::*;
 
 use super::{
-    BingusSetting,
     BingusModule,
-    BoxedBingusSetting,
     BoxedBingusModule,
+    BingusSettings,
     SettingValue
 };
 use crate::client::mapping::MemTrait;

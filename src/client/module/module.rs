@@ -2,11 +2,8 @@ use crate::client::mapping::MappingsManager;
 use std::rc::Rc;
 use std::cell::{RefCell, Ref};
 use jni::JNIEnv;
-use crate::client::{
-    BoxedBingusSetting,
-    BoxedBingusModule,
-};
-use super::SettingType;
+use crate::client::BoxedBingusModule;
+use super::BingusSettings;
 
 // todo make this all a nice big proc macro
 pub trait BingusModule {
@@ -22,9 +19,9 @@ pub trait BingusModule {
 
     fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>);
 
-    fn get_settings_ref_cell(&self) -> Rc<Vec<SettingType>>;
+    fn get_settings_ref_cell(&self) -> Rc<Vec<Rc<RefCell<BingusSettings>>>>;
 
-    fn get_enabled_ref_cell(&self) -> SettingType;
+    fn get_enabled_ref_cell(&self) -> Rc<RefCell<BingusSettings>>;
 
     fn to_name(&self) -> String;
 }

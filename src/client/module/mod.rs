@@ -3,13 +3,10 @@ mod module;
 
 pub use self::module::BingusModule;
 
-use super::{
-    BoxedBingusSetting,
-    BoxedBingusModule,
-};
+use super::BoxedBingusModule;
 use super::setting::{
-    BingusSetting,
-    SettingValue
+    BingusSettings,
+    SettingValue,
 };
 
-type SettingType = ::std::rc::Rc<::std::cell::RefCell<BoxedBingusSetting>>;
+type SettingType = ::std::rc::Rc<::std::cell::RefCell<BingusSettings>>;

@@ -62,9 +62,6 @@ impl ClickGui {
                 Rc::new(RefCell::new(AutoTotem::new_boxed())),
 
                 Rc::new(RefCell::new(TestModule::new_boxed())),
-                Rc::new(RefCell::new(TestModule::new_boxed())),
-                Rc::new(RefCell::new(TestModule::new_boxed())),
-                Rc::new(RefCell::new(TestModule::new_boxed())),
             ],
         }
     }
