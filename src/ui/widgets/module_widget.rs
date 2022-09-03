@@ -23,19 +23,21 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
             ));
 
             ui.collapsing(module.to_name(), |ui| {
-                let mut to_unleak = module.get_settings_ref_cell();
-                for setting in Ref::leak(to_unleak.borrow()) {
-                    let leaked = RefMut::leak(setting.borrow_mut());
-                    match leaked {
+                let to_unleak = module.get_settings_ref_cell();
+                let first_leaked = Ref::leak(to_unleak.borrow());
+                for setting in (*first_leaked).iter() {  // might need to undo_leak
+                    println!("looped");
+                    let second_leaked = RefMut::leak((*setting).borrow_mut());
+                    match second_leaked {
                         BingusSettings::BooleanSetting(_) => {
-                            ui.label(leaked.get_name());
-                            ui.add(toggle(leaked.get_bool_mut().get_value_mut()));
+                            ui.label(second_leaked.get_name());
+                            ui.add(toggle(second_leaked.get_bool_mut().get_value_mut()));
                         },
                         BingusSettings::FloatSetting(_) => {
-                            ui.label(leaked.get_name());
-                            let range = leaked.get_float_mut().get_range();
+                            ui.label(second_leaked.get_name());
+                            let range = second_leaked.get_float_mut().get_range();
                             ui.add(egui::Slider::new(
-                                leaked.get_float_mut().get_value_mut(),
+                                second_leaked.get_float_mut().get_value_mut(),
                                 range,
                             ));
                         },
