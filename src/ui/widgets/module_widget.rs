@@ -18,7 +18,7 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
     if ui.is_rect_visible(rect) {
         ui.horizontal(|ui| {
             ui.add(toggle(
-                module.get_enabled_ref_cell().borrow_mut().get_bool_mut().get_value_mut(),
+                module.get_enabled_ref_cell().borrow_mut().get_bool_mut().get_value_mut()  // panic because of here and clickgui.rs borrowing the enabled RefCell
             ));
 
             ui.collapsing(module.to_name(), |ui| {

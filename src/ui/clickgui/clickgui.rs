@@ -81,7 +81,7 @@ impl eframe::App for ClickGui {
                     ui.add(module_widget(&module.borrow()));
                 });
 
-                if module.borrow().get_enabled_ref_cell().borrow().get_value().try_into().unwrap() {  // panic because of the mut borrow in module_widget, i think
+                if module.borrow().get_enabled_ref_cell().borrow()/* error is because of this borrow */.get_value().try_into().unwrap() {
                     self.client_sender.send(ClickGuiMessage::RunModule(
                         Rc::clone(module)
                     )).unwrap();
