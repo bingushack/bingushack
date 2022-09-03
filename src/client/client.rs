@@ -4,7 +4,7 @@ use std::sync::mpsc::{Sender, Receiver};
 use super::mapping::*;
 use crate::ClickGuiMessage;
 use super::module::*;
-use crate::client::setting::BingusSetting;
+
 
 
 

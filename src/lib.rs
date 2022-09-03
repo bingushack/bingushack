@@ -202,8 +202,8 @@ pub extern "stdcall" fn DllMain(
                 );
                 CloseHandle(bingus_thread);
             }
-            return true as i32;
+            true as i32
         },
-        _ => return true as i32,  // it went a-ok because we dont know what happened so lol fuck off
+        _ => true as i32,  // it went a-ok because we dont know what happened so lol fuck off
     }
 }

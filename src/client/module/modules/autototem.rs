@@ -13,7 +13,7 @@ use super::{
 };
 use std::sync::Arc;
 use std::rc::Rc;
-use std::cell::{RefCell, Ref};
+use std::cell::RefCell;
 use std::sync::Mutex;
 use jni::JNIEnv;
 use crate::client::mapping::MappingsManager;
@@ -116,7 +116,7 @@ impl BingusModule for AutoTotem {
         };
 
         // if offhand is not a totem
-        if {
+        let res = {
             // compare to the offhand item
             let get_raw_id_method = offhand_item.get_static_method("getRawId").unwrap();
             let offhand_item_id = env.call_static_method(
@@ -127,7 +127,7 @@ impl BingusModule for AutoTotem {
             ).unwrap().i().unwrap();
 
             offhand_item_id != totem_of_undying_id
-        }
+        }; if res
         {
             // todo add a check if a totem is even in the inventory with containsAny
             // find totem in inventory
@@ -139,7 +139,7 @@ impl BingusModule for AutoTotem {
             // all valid totem slots
             // only works in main inventory, not hotbar for some reason
             for i in 9..45 {
-                if {
+                let res = {
                     let i_item_stack = mappings_manager.get("ItemStack").unwrap();
                     let i_item = mappings_manager.get("Item").unwrap();
                     // call getStack(i) on inventory then getItem on the result then getRawId on the result of that
@@ -165,7 +165,7 @@ impl BingusModule for AutoTotem {
                         get_raw_id_method.get_sig(),
                         &[JValue::from(i_item.get_object().unwrap())]
                     ).unwrap().i().unwrap() == totem_of_undying_id
-                } {
+                }; if res {
                     found_totem_slot = Some(i);
                     break;
                 }
@@ -240,13 +240,13 @@ impl BingusModule for AutoTotem {
         }
     }
 
-    fn on_load(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {  }
+    fn on_load(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {  }
 
-    fn on_unload(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {  }
+    fn on_unload(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {  }
 
-    fn on_enable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {  }
+    fn on_enable(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {  }
 
-    fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {  }
+    fn on_disable(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {  }
 
     fn get_all_settings(&self) -> AllSettingsType {
         Arc::clone(&self.settings)

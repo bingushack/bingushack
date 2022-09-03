@@ -1,4 +1,4 @@
-use crate::client::BingusSettings;
+
 
 // todo implement From trait for BingusSetting
 pub trait BingusSetting {

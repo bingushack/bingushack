@@ -1,21 +1,13 @@
-use std::cell::{
-    RefCell,
-    Ref,
-    RefMut,
-};
-use std::rc::Rc;
-use crate::client::setting::{
-    BingusSettings,
-    SettingValue,
-    BooleanSetting,
-};
+
+
+
 
 use eframe::egui;
 
 fn toggle_ui(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
     let desired_size = ui.spacing().interact_size.y * egui::vec2(2.0, 1.0);
 
-    let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+    let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
 
     if response.clicked() {
         *on = !*on;
