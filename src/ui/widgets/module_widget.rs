@@ -3,7 +3,6 @@ use crate::client::module::BingusModule;
 use crate::client::setting::*;
 use std::cell::{
     RefMut,
-    Ref,
     RefCell,
 };
 use std::rc::Rc;
@@ -23,10 +22,9 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
             ));
 
             ui.collapsing(module.to_name(), |ui| {
-                let to_unleak = module.get_settings_ref_cell();
-                let first_leaked = Ref::leak(to_unleak.borrow());
-                for setting in (*first_leaked).iter() {  // might need to undo_leak
-                    println!("looped");
+                let mut to_unleak = module.get_settings_ref_cell();
+                let first_leaked = RefMut::leak(to_unleak.borrow_mut());
+                for setting in (*first_leaked).iter_mut() {
                     let second_leaked = RefMut::leak((*setting).borrow_mut());
                     match second_leaked {
                         BingusSettings::BooleanSetting(_) => {
@@ -42,7 +40,11 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
                             ));
                         },
                     }
+                    // undo second_leaked
+                    Rc::make_mut(setting).undo_leak();
                 }
+                // undo first_leaked
+                Rc::make_mut(&mut to_unleak).undo_leak();
             });
         });
     }
