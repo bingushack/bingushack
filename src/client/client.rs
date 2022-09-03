@@ -8,7 +8,6 @@ use crate::client::setting::BingusSetting;
 
 
 
-pub type BoxedBingusSetting = Box<dyn BingusSetting>;
 pub type BoxedBingusModule = Box<dyn BingusModule>;
 
 

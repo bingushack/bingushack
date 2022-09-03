@@ -62,9 +62,6 @@ impl ClickGui {
                 Rc::new(RefCell::new(AutoTotem::new_boxed())),
 
                 Rc::new(RefCell::new(TestModule::new_boxed())),
-                Rc::new(RefCell::new(TestModule::new_boxed())),
-                Rc::new(RefCell::new(TestModule::new_boxed())),
-                Rc::new(RefCell::new(TestModule::new_boxed())),
             ],
         }
     }
@@ -84,7 +81,7 @@ impl eframe::App for ClickGui {
                     ui.add(module_widget(&module.borrow()));
                 });
 
-                if module.borrow().get_enabled_ref_cell().borrow().get_value().try_into().unwrap() {
+                if module.borrow().get_enabled_setting().lock().unwrap().borrow().get_value().try_into().unwrap() {
                     self.client_sender.send(ClickGuiMessage::RunModule(
                         Rc::clone(module)
                     )).unwrap();

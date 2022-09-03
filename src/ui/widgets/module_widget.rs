@@ -1,5 +1,12 @@
 use eframe::egui;
 use crate::client::module::BingusModule;
+use crate::client::setting::*;
+use std::cell::{
+    RefMut,
+    RefCell,
+};
+use std::rc::Rc;
+use std::sync::Arc;
 
 use super::toggle;
 
@@ -12,14 +19,34 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
     if ui.is_rect_visible(rect) {
         ui.horizontal(|ui| {
             ui.add(toggle(
-                module.get_enabled_ref_cell()
+                module.get_enabled_setting().lock().unwrap().borrow_mut().get_bool_mut().get_value_mut()
             ));
 
-            ui.collapsing(module.to_name(), |_ui| {
-                for _setting in &*module.get_settings_ref_cell() {
-                    // can't add settings because i haven't made them yet lol
-                    let _ = (**_setting).borrow_mut();
+            ui.collapsing(module.to_name(), |ui| {
+                let settings_mutex = module.get_all_settings();
+                let mut to_unleak = settings_mutex.lock().unwrap();
+                let first_leaked = RefMut::leak(to_unleak.borrow_mut());
+                for setting in (*first_leaked).iter_mut() {
+                    let second_leaked = RefMut::leak((*setting).borrow_mut());
+                    match second_leaked {
+                        BingusSettings::BooleanSetting(_) => {
+                            ui.label(second_leaked.get_name());
+                            ui.add(toggle(second_leaked.get_bool_mut().get_value_mut()));
+                        },
+                        BingusSettings::FloatSetting(_) => {
+                            ui.label(second_leaked.get_name());
+                            let range = second_leaked.get_float_mut().get_range();
+                            ui.add(egui::Slider::new(
+                                second_leaked.get_float_mut().get_value_mut(),
+                                range,
+                            ));
+                        },
+                    }
+                    // undo second_leaked
+                    Rc::make_mut(setting).undo_leak();
                 }
+                // undo first_leaked
+                to_unleak.undo_leak();
             });
         });
     }

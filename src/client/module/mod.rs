@@ -3,13 +3,16 @@ mod module;
 
 pub use self::module::BingusModule;
 
-use super::{
-    BoxedBingusSetting,
-    BoxedBingusModule,
-};
+use super::BoxedBingusModule;
 use super::setting::{
-    BingusSetting,
-    SettingValue
+    BingusSettings,
+    SettingValue,
 };
 
-type SettingType = ::std::rc::Rc<::std::cell::RefCell<BoxedBingusSetting>>;
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::Mutex;
+
+pub type SettingType = Arc<Mutex<RefCell<BingusSettings>>>;
+pub type AllSettingsType =  Arc<Mutex<RefCell<Vec<Rc<RefCell<BingusSettings>>>>>>;

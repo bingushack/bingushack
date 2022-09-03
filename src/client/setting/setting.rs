@@ -1,19 +1,36 @@
-use crate::client::BoxedBingusSetting;
+use crate::client::BingusSettings;
 
 // todo implement From trait for BingusSetting
-// todo give Settings names
 pub trait BingusSetting {
-    fn new_boxed(value: SettingValue) -> BoxedBingusSetting where Self: Sized;
-
     fn get_value(&self) -> SettingValue;
 
     fn set_value(&mut self, new_value: SettingValue);
+
+    fn get_name(&self) -> &String;
 }
 
 pub enum SettingValue {
     Bool(bool),
     Int(i32),
     String(String),
+    Float(f64),
+}
+
+
+impl TryInto<f64> for SettingValue {
+    type Error = ();
+    fn try_into(self) -> Result<f64, Self::Error> {
+        match self {
+            SettingValue::Float(f) => Ok(f),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<f64> for SettingValue {
+    fn from(f: f64) -> Self {
+        SettingValue::Float(f)
+    }
 }
 
 impl TryInto<bool> for SettingValue {
@@ -55,6 +72,7 @@ impl TryInto<String> for SettingValue {
             SettingValue::String(s) => Ok(s),
             SettingValue::Bool(b) => Ok(b.to_string()),
             SettingValue::Int(i) => Ok(i.to_string()),
+            SettingValue::Float(f) => Ok(f.to_string()),
         }
     }
 }
