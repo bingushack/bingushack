@@ -2,15 +2,14 @@ mod mappings_manager;
 
 pub use self::mappings_manager::MappingsManager;
 
-use jni::objects::{JObject, JClass};
+use jni::objects::{JClass, JObject};
 
-use std::cell::RefCell;
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
 #[derive(Clone, Debug)]
 pub struct CM<'j> {
     class: RefCell<Option<JClass<'j>>>,
-    object: RefCell<Option<JObject<'j>>>,  // bruh
+    object: RefCell<Option<JObject<'j>>>, // bruh
 
     fields: HashMap<String, Mem>,
     static_fields: HashMap<String, StaticMem>,
@@ -24,12 +23,12 @@ impl<'j> Default for CM<'j> {
         CM {
             class: RefCell::new(None),
             object: RefCell::new(None),
-    
+
             fields: HashMap::new(),
             static_fields: HashMap::new(),
-    
+
             methods: HashMap::new(),
-            static_methods: HashMap::new()
+            static_methods: HashMap::new(),
         }
     }
 }
@@ -59,7 +58,6 @@ impl<'j> CM<'j> {
         *self.object.borrow()
     }
 
-    
     // makes object not None
     pub fn apply_object(&self, object: JObject<'j>) {
         *self.object.borrow_mut() = Some(object);
@@ -69,51 +67,26 @@ impl<'j> CM<'j> {
         *self.class.borrow_mut() = Some(class);
     }
 
+    fn add_method(&mut self, key_name: String, ob_name: String, sig: String, is_static: bool) {
+        let m = Mem { name: ob_name, sig };
 
-
-
-
-
-    fn add_method(
-        &mut self,
-        key_name: String,
-        ob_name: String,
-        sig: String,
-        is_static: bool,
-    ) {
-        let m = Mem {
-            name: ob_name,
-            sig,
-        };
-    
         if is_static {
-            self.static_methods.insert(key_name, StaticMem { mem: m } );
+            self.static_methods.insert(key_name, StaticMem { mem: m });
         } else {
             self.methods.insert(key_name, m);
         }
     }
 
-    fn add_field(
-        &mut self,
-        key_name: String,
-        ob_name: String,
-        sig: String,
-        is_static: bool,
-    ) {
-        let m = Mem {
-            name: ob_name,
-            sig,
-        };
-    
+    fn add_field(&mut self, key_name: String, ob_name: String, sig: String, is_static: bool) {
+        let m = Mem { name: ob_name, sig };
+
         if is_static {
-            self.static_fields.insert(key_name, StaticMem { mem: m } );
+            self.static_fields.insert(key_name, StaticMem { mem: m });
         } else {
             self.fields.insert(key_name, m);
         }
     }
 }
-
-
 
 pub trait MemTrait {
     fn get_name(&self) -> String;
@@ -127,7 +100,6 @@ pub struct Mem {
     sig: String,
 }
 
-
 impl MemTrait for Mem {
     fn get_name(&self) -> String {
         self.name.clone()
@@ -140,7 +112,7 @@ impl MemTrait for Mem {
 
 #[derive(Clone, Debug)]
 pub struct StaticMem {
-    mem: Mem
+    mem: Mem,
 }
 
 impl MemTrait for StaticMem {

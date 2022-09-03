@@ -1,9 +1,6 @@
+use crate::client::{module::BingusModule, setting::*};
 use eframe::egui;
-use crate::client::module::BingusModule;
-use crate::client::setting::*;
-use std::cell::RefMut;
-use std::rc::Rc;
-
+use std::{cell::RefMut, rc::Rc};
 
 use super::toggle;
 
@@ -16,7 +13,13 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
     if ui.is_rect_visible(rect) {
         ui.horizontal(|ui| {
             ui.add(toggle(
-                module.get_enabled_setting().lock().unwrap().borrow_mut().get_bool_mut().get_value_mut()
+                module
+                    .get_enabled_setting()
+                    .lock()
+                    .unwrap()
+                    .borrow_mut()
+                    .get_bool_mut()
+                    .get_value_mut(),
             ));
 
             ui.collapsing(module.to_name(), |ui| {
@@ -29,7 +32,7 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
                         BingusSettings::BooleanSetting(_) => {
                             ui.label(second_leaked.get_name());
                             ui.add(toggle(second_leaked.get_bool_mut().get_value_mut()));
-                        },
+                        }
                         BingusSettings::FloatSetting(_) => {
                             ui.label(second_leaked.get_name());
                             let range = second_leaked.get_float_mut().get_range();
@@ -37,7 +40,7 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
                                 second_leaked.get_float_mut().get_value_mut(),
                                 range,
                             ));
-                        },
+                        }
                     }
                     // undo second_leaked
                     Rc::make_mut(setting).undo_leak();

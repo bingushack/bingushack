@@ -1,5 +1,5 @@
-pub mod debug_console;
 pub mod clickgui;
+pub mod debug_console;
 pub mod message;
 pub mod widgets;
 

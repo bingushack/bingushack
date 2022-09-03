@@ -1,15 +1,12 @@
-use jni::JNIEnv;
-use std::rc::Rc;
-use std::sync::mpsc::{Sender, Receiver};
-use super::mapping::*;
+use super::{mapping::*, module::*};
 use crate::ClickGuiMessage;
-use super::module::*;
-
-
-
+use jni::JNIEnv;
+use std::{
+    rc::Rc,
+    sync::mpsc::{Receiver, Sender},
+};
 
 pub type BoxedBingusModule = Box<dyn BingusModule>;
-
 
 pub struct Client {
     rx: Receiver<ClickGuiMessage>,
@@ -19,9 +16,12 @@ pub struct Client {
     mappings_manager: Rc<MappingsManager<'static>>,
 }
 
-
 impl Client {
-    pub fn new(jni_env: JNIEnv<'static>, rx: Receiver<ClickGuiMessage>, tx: Sender<ClickGuiMessage>) -> Client {
+    pub fn new(
+        jni_env: JNIEnv<'static>,
+        rx: Receiver<ClickGuiMessage>,
+        tx: Sender<ClickGuiMessage>,
+    ) -> Client {
         let env = Rc::new(jni_env);
         Client {
             rx,
@@ -37,8 +37,10 @@ impl Client {
         if let Ok(message) = self.rx.try_recv() {
             match message {
                 ClickGuiMessage::RunModule(module) => {
-                    module.borrow_mut().tick(self.env.clone(), self.mappings_manager.clone());
-                },
+                    module
+                        .borrow_mut()
+                        .tick(self.env.clone(), self.mappings_manager.clone());
+                }
             }
         }
     }

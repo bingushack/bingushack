@@ -1,7 +1,3 @@
-
-
-
-
 use eframe::egui;
 
 fn toggle_ui(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
@@ -13,12 +9,10 @@ fn toggle_ui(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
         *on = !*on;
     }
 
-
     if ui.is_rect_visible(rect) {
         let how_on = ui.ctx().animate_bool(response.id, *on);
 
         let visuals = ui.style().interact_selectable(&response, *on);
-
 
         let rect = rect.expand(visuals.expansion);
         let radius = 0.5 * rect.height();
@@ -34,7 +28,6 @@ fn toggle_ui(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
 
     response
 }
-
 
 pub fn toggle(on: &mut bool) -> impl egui::Widget + '_ {
     move |ui: &mut egui::Ui| toggle_ui(ui, on)

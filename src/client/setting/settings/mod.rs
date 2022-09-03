@@ -3,13 +3,8 @@
 mod boolean_setting;
 mod float_setting;
 
-pub use self::boolean_setting::*;
-pub use self::float_setting::*;
-use crate::client::setting::{
-    BingusSetting,
-    SettingValue,
-};
-
+pub use self::{boolean_setting::*, float_setting::*};
+use crate::client::setting::{BingusSetting, SettingValue};
 
 // todo MACRO holy shit
 #[derive(Debug, Clone)]
@@ -57,7 +52,6 @@ impl BingusSettings {
         }
     }
 }
-
 
 // todo I NEED A MACRO FOR THIS
 impl TryInto<BooleanSetting> for BingusSettings {

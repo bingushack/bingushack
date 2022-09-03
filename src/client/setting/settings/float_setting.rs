@@ -1,6 +1,5 @@
+use crate::client::setting::{BingusSetting, SettingValue};
 use core::ops::RangeInclusive;
-use crate::client::setting::BingusSetting;
-use crate::client::setting::SettingValue;
 
 #[derive(Debug, Clone)]
 pub struct FloatSetting {
