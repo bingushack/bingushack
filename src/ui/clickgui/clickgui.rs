@@ -38,6 +38,7 @@ pub fn run_clickgui(app: ClickGui) {
 }
 
 pub struct ClickGui {
+    #[allow(dead_code)]
     rx: Receiver<ClickGuiMessage>,
 
     // sender to the client itself
@@ -61,10 +62,6 @@ impl ClickGui {
                 Rc::new(RefCell::new(TestModule::new_boxed())),
             ],
         }
-    }
-
-    pub fn get_client_sender(&self) -> Sender<ClickGuiMessage> {
-        self.client_sender.clone()
     }
 }
 

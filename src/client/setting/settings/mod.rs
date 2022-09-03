@@ -22,14 +22,6 @@ impl BingusSettings {
         }
     }
 
-    pub fn set_value(&mut self, value: SettingValue) {
-        match self {
-            // todo MACRO!!!!!!!!!!!!!!!!!!
-            BingusSettings::BooleanSetting(setting) => setting.set_value(value),
-            BingusSettings::FloatSetting(setting) => setting.set_value(value),
-        }
-    }
-
     pub fn get_name(&self) -> &String {
         match self {
             // todo MACRO!!!!!!!!!!!!!!!!!!

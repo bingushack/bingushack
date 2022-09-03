@@ -27,6 +27,7 @@ pub fn run_debug_console(app: DebugConsole) {
 pub struct DebugConsole {
     text: Vec<String>,
     rx: Receiver<String>,
+    #[allow(dead_code)]
     tx: Sender<String>,
 }
 
