@@ -10,6 +10,7 @@ pub type BoxedBingusModule = Box<dyn BingusModule>;
 
 pub struct Client {
     rx: Receiver<ClickGuiMessage>,
+    #[allow(dead_code)]
     tx: Sender<ClickGuiMessage>,
 
     env: Rc<JNIEnv<'static>>,
