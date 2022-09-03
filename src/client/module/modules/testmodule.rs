@@ -10,11 +10,14 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::client::mapping::MappingsManager;
 use jni::JNIEnv;
-use crate::client::setting::BooleanSetting;
+use crate::client::setting::{
+    BooleanSetting,
+    FloatSetting,
+};
 
 pub struct TestModule {
     enabled: Rc<RefCell<BingusSettings>>,
-    settings: Rc<Vec<Rc<RefCell<BingusSettings>>>>,
+    settings: Rc<RefCell<Vec<Rc<RefCell<BingusSettings>>>>>,
 }
 
 impl BingusModule for TestModule {
@@ -22,7 +25,9 @@ impl BingusModule for TestModule {
         Box::new(
             Self {
                 enabled: Rc::new(RefCell::new(BingusSettings::BooleanSetting(BooleanSetting::new(SettingValue::from(false), "enabled")))),
-                settings: Rc::new(vec![]),
+                settings: Rc::new(RefCell::new(vec![
+                    Rc::new(RefCell::new(BingusSettings::FloatSetting(FloatSetting::new(SettingValue::from(0.0), "float", 0.0..=4.0)))),
+                ])),
             }
         )
     }
@@ -37,7 +42,7 @@ impl BingusModule for TestModule {
 
     fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {  }
 
-    fn get_settings_ref_cell(&self) -> Rc<Vec<Rc<RefCell<BingusSettings>>>> {
+    fn get_settings_ref_cell(&self) -> Rc<RefCell<Vec<Rc<RefCell<BingusSettings>>>>> {
         Rc::clone(&self.settings)
     }
 

@@ -3,6 +3,7 @@ use crate::client::module::BingusModule;
 use crate::client::setting::*;
 use std::cell::{
     RefMut,
+    Ref,
     RefCell,
 };
 use std::rc::Rc;
@@ -18,26 +19,27 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
     if ui.is_rect_visible(rect) {
         ui.horizontal(|ui| {
             ui.add(toggle(
-                module.get_enabled_ref_cell().borrow_mut().get_bool_mut(),
+                module.get_enabled_ref_cell().borrow_mut().get_bool_mut().get_value_mut(),
             ));
 
             ui.collapsing(module.to_name(), |ui| {
-                for setting in &*module.get_settings_ref_cell() {
-                    match RefMut::leak(setting.clone().borrow_mut()) {
-                        BingusSettings::BooleanSetting(setting) => {
-                            ui.label(setting.get_name());
-                            ui.add(toggle(setting.get_value_mut()));
+                let mut to_unleak = module.get_settings_ref_cell();
+                for setting in Ref::leak(to_unleak.borrow()) {
+                    let leaked = RefMut::leak(setting.borrow_mut());
+                    match leaked {
+                        BingusSettings::BooleanSetting(_) => {
+                            ui.label(leaked.get_name());
+                            ui.add(toggle(leaked.get_bool_mut().get_value_mut()));
                         },
-                        BingusSettings::FloatSetting(setting) => {
-                            ui.label(setting.get_name());
-                            let range = setting.get_range();
+                        BingusSettings::FloatSetting(_) => {
+                            ui.label(leaked.get_name());
+                            let range = leaked.get_float_mut().get_range();
                             ui.add(egui::Slider::new(
-                                setting.get_value_mut(),
+                                leaked.get_float_mut().get_value_mut(),
                                 range,
                             ));
                         },
                     }
-                    // idk if i need to undo leak bc it's dropped
                 }
             });
         });

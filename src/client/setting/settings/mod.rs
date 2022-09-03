@@ -43,16 +43,16 @@ impl BingusSettings {
         }
     }
 
-    pub fn get_bool_mut(&mut self) -> &mut bool {
+    pub fn get_bool_mut(&mut self) -> &mut BooleanSetting {
         match self {
-            BingusSettings::BooleanSetting(setting) => setting.get_value_mut(),
+            BingusSettings::BooleanSetting(setting) => setting,
             _ => panic!("get_bool_mut called on a non-boolean setting"),
         }
     }
 
-    pub fn get_float_mut(&mut self) -> &mut f64 {
+    pub fn get_float_mut(&mut self) -> &mut FloatSetting {
         match self {
-            BingusSettings::FloatSetting(setting) => setting.get_value_mut(),
+            BingusSettings::FloatSetting(setting) => setting,
             _ => panic!("get_float_mut called on a non-float setting"),
         }
     }

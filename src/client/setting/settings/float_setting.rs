@@ -10,7 +10,7 @@ pub struct FloatSetting {
 }
 
 impl FloatSetting {
-    pub fn new_boxed(value: SettingValue, name: &str, range: RangeInclusive<f64>) -> Self {
+    pub fn new(value: SettingValue, name: &str, range: RangeInclusive<f64>) -> Self {
         FloatSetting {
             value: value.try_into().unwrap(),
             name: name.to_string(),

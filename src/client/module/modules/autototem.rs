@@ -19,7 +19,7 @@ use crate::client::setting::BooleanSetting;
 pub struct AutoTotem {
     // todo make this enabled settings boilerplate shit a proc macro
     enabled: Rc<RefCell<BingusSettings>>,
-    settings: Rc<Vec<Rc<RefCell<BingusSettings>>>>,
+    settings: Rc<RefCell<Vec<Rc<RefCell<BingusSettings>>>>>,
 }
 
 impl BingusModule for AutoTotem {
@@ -27,7 +27,7 @@ impl BingusModule for AutoTotem {
         Box::new(
             Self {
                 enabled: Rc::new(RefCell::new(BingusSettings::BooleanSetting(BooleanSetting::new(SettingValue::from(false), "enabled")))),
-                settings: Rc::new(vec![])
+                settings: Rc::new(RefCell::new(vec![]))
             }
         )
     }
@@ -245,7 +245,7 @@ impl BingusModule for AutoTotem {
 
     fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {  }
 
-    fn get_settings_ref_cell(&self) -> Rc<Vec<Rc<RefCell<BingusSettings>>>> {
+    fn get_settings_ref_cell(&self) -> Rc<RefCell<Vec<Rc<RefCell<BingusSettings>>>>> {
         Rc::clone(&self.settings)
     }
 

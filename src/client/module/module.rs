@@ -19,7 +19,7 @@ pub trait BingusModule {
 
     fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>);
 
-    fn get_settings_ref_cell(&self) -> Rc<Vec<Rc<RefCell<BingusSettings>>>>;
+    fn get_settings_ref_cell(&self) -> Rc<RefCell<Vec<Rc<RefCell<BingusSettings>>>>>;
 
     fn get_enabled_ref_cell(&self) -> Rc<RefCell<BingusSettings>>;
 
