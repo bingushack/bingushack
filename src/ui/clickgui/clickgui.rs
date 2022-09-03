@@ -83,7 +83,7 @@ impl eframe::App for ClickGui {
 
                 if module.borrow().get_enabled_ref_cell().borrow()/* error is because of this borrow */.get_value().try_into().unwrap() {
                     self.client_sender.send(ClickGuiMessage::RunModule(
-                        Rc::clone(module)
+                        Rc::clone(module)  // or the borrowing that happens here
                     )).unwrap();
                 }
             }
