@@ -9,25 +9,28 @@ use super::{
     BoxedBingusModule,
     MemTrait,
     SettingType,
+    AllSettingsType,
 };
+use std::sync::Arc;
 use std::rc::Rc;
 use std::cell::{RefCell, Ref};
+use std::sync::Mutex;
 use jni::JNIEnv;
 use crate::client::mapping::MappingsManager;
 use crate::client::setting::BooleanSetting;
 
 pub struct AutoTotem {
     // todo make this enabled settings boilerplate shit a proc macro
-    enabled: Rc<RefCell<BingusSettings>>,
-    settings: Rc<RefCell<Vec<Rc<RefCell<BingusSettings>>>>>,
+    enabled: SettingType,
+    settings: AllSettingsType,
 }
 
 impl BingusModule for AutoTotem {
     fn new_boxed() -> BoxedBingusModule {
         Box::new(
             Self {
-                enabled: Rc::new(RefCell::new(BingusSettings::BooleanSetting(BooleanSetting::new(SettingValue::from(false), "enabled")))),
-                settings: Rc::new(RefCell::new(vec![]))
+                enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(BooleanSetting::new(SettingValue::from(false), "enabled"))))),
+                settings: Arc::new(Mutex::new(RefCell::new(vec![])))
             }
         )
     }
@@ -245,12 +248,12 @@ impl BingusModule for AutoTotem {
 
     fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {  }
 
-    fn get_settings_ref_cell(&self) -> Rc<RefCell<Vec<Rc<RefCell<BingusSettings>>>>> {
-        Rc::clone(&self.settings)
+    fn get_all_settings(&self) -> AllSettingsType {
+        Arc::clone(&self.settings)
     }
 
-    fn get_enabled_ref_cell(&self) -> Rc<RefCell<BingusSettings>> {
-        Rc::clone(&self.enabled)
+    fn get_enabled_setting(&self) -> SettingType {
+        Arc::clone(&self.enabled)
     }
 
     fn to_name(&self) -> String {

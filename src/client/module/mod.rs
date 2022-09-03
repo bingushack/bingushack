@@ -9,4 +9,10 @@ use super::setting::{
     SettingValue,
 };
 
-type SettingType = ::std::rc::Rc<::std::cell::RefCell<BingusSettings>>;
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::Arc;
+use std::sync::Mutex;
+
+pub type SettingType = Arc<Mutex<RefCell<BingusSettings>>>;
+pub type AllSettingsType =  Arc<Mutex<RefCell<Vec<Rc<RefCell<BingusSettings>>>>>>;

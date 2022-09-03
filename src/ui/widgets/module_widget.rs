@@ -6,6 +6,7 @@ use std::cell::{
     RefCell,
 };
 use std::rc::Rc;
+use std::sync::Arc;
 
 use super::toggle;
 
@@ -18,11 +19,12 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
     if ui.is_rect_visible(rect) {
         ui.horizontal(|ui| {
             ui.add(toggle(
-                module.get_enabled_ref_cell().borrow_mut().get_bool_mut().get_value_mut()  // panic because of here and clickgui.rs borrowing the enabled RefCell
+                module.get_enabled_setting().lock().unwrap().borrow_mut().get_bool_mut().get_value_mut()
             ));
 
             ui.collapsing(module.to_name(), |ui| {
-                let mut to_unleak = module.get_settings_ref_cell();
+                let settings_mutex = module.get_all_settings();
+                let mut to_unleak = settings_mutex.lock().unwrap();
                 let first_leaked = RefMut::leak(to_unleak.borrow_mut());
                 for setting in (*first_leaked).iter_mut() {
                     let second_leaked = RefMut::leak((*setting).borrow_mut());
@@ -44,7 +46,7 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
                     Rc::make_mut(setting).undo_leak();
                 }
                 // undo first_leaked
-                Rc::make_mut(&mut to_unleak).undo_leak();
+                to_unleak.undo_leak();
             });
         });
     }

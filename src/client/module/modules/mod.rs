@@ -8,7 +8,8 @@ use super::{
     BingusModule,
     BoxedBingusModule,
     BingusSettings,
-    SettingValue
+    SettingValue,
+    SettingType,
+    AllSettingsType,
 };
 use crate::client::mapping::MemTrait;
-use super::SettingType;
