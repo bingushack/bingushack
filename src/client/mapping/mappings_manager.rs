@@ -13,6 +13,7 @@ impl<'j> MappingsManager<'j> {
     pub fn new(jni_env: Rc<JNIEnv<'j>>) -> MappingsManager<'j> {
         macro_rules! adds {
             ($cm:ident) => {
+                #[allow(unused_macros)]
                 macro_rules! add_field {
                     ($key_name:literal, $ob_name:literal, $sig:literal, $is_static:literal) => {
                         $cm.add_field(
@@ -24,7 +25,7 @@ impl<'j> MappingsManager<'j> {
                     };
                 }
 
-                // macros for making a new method
+                #[allow(unused_macros)]
                 macro_rules! add_method {
                     ($key_name:literal, $ob_name:literal, $sig:literal, $is_static:literal) => {
                         $cm.add_method(
