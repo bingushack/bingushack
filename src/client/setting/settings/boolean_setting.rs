@@ -1,5 +1,4 @@
-use crate::client::setting::BingusSetting;
-use crate::client::setting::SettingValue;
+use crate::client::setting::{BingusSetting, SettingValue};
 
 #[derive(Debug, Clone)]
 pub struct BooleanSetting {

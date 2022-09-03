@@ -1,17 +1,15 @@
 use crate::client::mapping::MappingsManager;
 use std::rc::Rc;
-use std::sync::Arc;
-use std::cell::{RefCell, Ref};
-use jni::JNIEnv;
+
+use super::{AllSettingsType, SettingType};
 use crate::client::BoxedBingusModule;
-use super::{
-    AllSettingsType,
-    SettingType,
-};
+use jni::JNIEnv;
 
 // todo make this all a nice big proc macro
 pub trait BingusModule {
-    fn new_boxed() -> BoxedBingusModule where Self: Sized;
+    fn new_boxed() -> BoxedBingusModule
+    where
+        Self: Sized;
 
     fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>);
 

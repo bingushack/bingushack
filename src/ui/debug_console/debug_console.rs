@@ -2,10 +2,7 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use eframe::egui;
 
-
-
 static mut ENABLED: bool = false;
-
 
 pub fn init_debug_console() -> (DebugConsole, Sender<String>) {
     let (tx, rx) = std::sync::mpsc::channel();
@@ -17,14 +14,14 @@ pub fn run_debug_console(app: DebugConsole) {
         return;
     }
     // else
-    unsafe { ENABLED = true; }
+    unsafe {
+        ENABLED = true;
+    }
     let options = eframe::NativeOptions::default();
-    eframe::run_native(
-        "bingushack debug",
-        options,
-        Box::new(|_cc| Box::new(app)),
-    );
-    unsafe { ENABLED = false; }
+    eframe::run_native("bingushack debug", options, Box::new(|_cc| Box::new(app)));
+    unsafe {
+        ENABLED = false;
+    }
 }
 
 pub struct DebugConsole {
@@ -34,7 +31,7 @@ pub struct DebugConsole {
 }
 
 impl DebugConsole {
-    pub fn new(rx: Receiver<String>, tx: Sender<String>,) -> Self {
+    pub fn new(rx: Receiver<String>, tx: Sender<String>) -> Self {
         Self {
             text: vec![String::from("")],
             rx,

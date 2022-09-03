@@ -4,8 +4,7 @@ pub mod setting;
 mod client;
 mod mapping;
 
-pub use self::client::{
-    Client,
-    BoxedBingusModule,
+pub use self::{
+    client::{BoxedBingusModule, Client},
+    setting::BingusSettings,
 };
-pub use self::setting::BingusSettings;

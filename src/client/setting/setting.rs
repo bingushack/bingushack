@@ -1,5 +1,3 @@
-use crate::client::BingusSettings;
-
 // todo implement From trait for BingusSetting
 pub trait BingusSetting {
     fn get_value(&self) -> SettingValue;
@@ -15,7 +13,6 @@ pub enum SettingValue {
     String(String),
     Float(f64),
 }
-
 
 impl TryInto<f64> for SettingValue {
     type Error = ();

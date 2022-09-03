@@ -1,15 +1,9 @@
 mod autototem;
 mod testmodule;
 
-pub use self::autototem::*;
-pub use self::testmodule::*;
+pub use self::{autototem::*, testmodule::*};
 
 use super::{
-    BingusModule,
-    BoxedBingusModule,
-    BingusSettings,
-    SettingValue,
-    SettingType,
-    AllSettingsType,
+    AllSettingsType, BingusModule, BingusSettings, BoxedBingusModule, SettingType, SettingValue,
 };
 use crate::client::mapping::MemTrait;
