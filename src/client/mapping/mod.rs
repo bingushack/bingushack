@@ -1,6 +1,8 @@
 mod mappings_manager;
+mod using_mappings_macro;
 
 pub use self::mappings_manager::MappingsManager;
+pub use self::using_mappings_macro::*;
 
 use jni::objects::{JClass, JObject};
 
@@ -12,10 +14,10 @@ pub struct CM<'j> {
     object: RefCell<Option<JObject<'j>>>, // bruh
 
     fields: HashMap<String, Mem>,
-    static_fields: HashMap<String, StaticMem>,
+    static_fields: HashMap<String, Mem>,
 
     methods: HashMap<String, Mem>,
-    static_methods: HashMap<String, StaticMem>,
+    static_methods: HashMap<String, Mem>,
 }
 
 impl<'j> Default for CM<'j> {
@@ -38,7 +40,7 @@ impl<'j> CM<'j> {
         self.fields.get(&name.to_string())
     }
 
-    pub fn get_static_field(&self, name: &str) -> Option<&StaticMem> {
+    pub fn get_static_field(&self, name: &str) -> Option<&Mem> {
         self.static_fields.get(&name.to_string())
     }
 
@@ -46,7 +48,7 @@ impl<'j> CM<'j> {
         self.methods.get(&name.to_string())
     }
 
-    pub fn get_static_method(&self, name: &str) -> Option<&StaticMem> {
+    pub fn get_static_method(&self, name: &str) -> Option<&Mem> {
         self.static_methods.get(&name.to_string())
     }
 
@@ -68,23 +70,11 @@ impl<'j> CM<'j> {
     }
 
     fn add_method(&mut self, key_name: String, ob_name: String, sig: String, is_static: bool) {
-        let m = Mem { name: ob_name, sig };
-
-        if is_static {
-            self.static_methods.insert(key_name, StaticMem { mem: m });
-        } else {
-            self.methods.insert(key_name, m);
-        }
+        self.methods.insert(key_name, Mem { name: ob_name, sig });
     }
 
     fn add_field(&mut self, key_name: String, ob_name: String, sig: String, is_static: bool) {
-        let m = Mem { name: ob_name, sig };
-
-        if is_static {
-            self.static_fields.insert(key_name, StaticMem { mem: m });
-        } else {
-            self.fields.insert(key_name, m);
-        }
+        self.fields.insert(key_name, Mem { name: ob_name, sig });
     }
 }
 
@@ -100,27 +90,12 @@ pub struct Mem {
     sig: String,
 }
 
-impl MemTrait for Mem {
-    fn get_name(&self) -> String {
+impl Mem {
+    pub fn get_name(&self) -> String {
         self.name.clone()
     }
 
-    fn get_sig(&self) -> String {
+    pub fn get_sig(&self) -> String {
         self.sig.clone()
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct StaticMem {
-    mem: Mem,
-}
-
-impl MemTrait for StaticMem {
-    fn get_name(&self) -> String {
-        self.mem.name.clone()
-    }
-
-    fn get_sig(&self) -> String {
-        self.mem.sig.clone()
     }
 }
