@@ -26,7 +26,7 @@ macro_rules! call_method_or_get_field {
             )
         } else {
             $env.get_field(
-                $cm.get_class(),
+                $cm.get_object().unwrap(),
                 mappings.get_name(),
                 mappings.get_sig(),
             )
