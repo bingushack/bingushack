@@ -43,7 +43,7 @@ impl BingusModule for AutoTotem {
         let player = mappings_manager.get("PlayerEntity").unwrap();
         apply_object!(
             player,
-            call_method_or_get_field!(env, player, "player", false).unwrap().l().unwrap()
+            call_method_or_get_field!(env, minecraft_client, "player", false).unwrap().l().unwrap()
         );
 
         let inventory = mappings_manager.get("Inventory").unwrap();
