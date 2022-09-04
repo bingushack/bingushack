@@ -58,3 +58,11 @@ macro_rules! call_method_or_get_field {
         }
     }};
 }
+
+// basically `vec![]` but with a slice `JValue<'_>`s
+#[macro_export]
+macro_rules! jvalue_args {
+    ($($x:expr),*) => {
+        vec![$($x),*].as_slice()
+    };
+}
