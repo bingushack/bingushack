@@ -19,3 +19,4 @@ crate-type = ["dylib"]
 [profile.release]
 debug = false
 strip = true
+abort = true

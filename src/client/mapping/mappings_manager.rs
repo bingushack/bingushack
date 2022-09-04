@@ -65,6 +65,7 @@ impl<'j> MappingsManager<'j> {
             add_field!("interactionManager", "q", "Lemv;", false);
 
             add_method!("getInstance", "D", "()Ldyr;", true);
+            add_method!("getTickDelta", "ai", "()F", false);
         });
         add_mapping!(new_self, "ClientLevel", "ems", {
             add_field!("players", "y", "()Ljava/util/List;", false);
@@ -74,12 +75,16 @@ impl<'j> MappingsManager<'j> {
 
             add_method!("getInventory", "fr", "()Lboi;", false);
             add_method!("getOffHandStack", "et", "()Lbuw;", false);
+            add_method!("isUsingItem", "eM", "()Z", false);
+            add_method!("swingHand", "a", "(Lawg;Z)V", false);
+            add_method!("getAttackCooldownProgress", "v", "(F)F", false);
         });
         add_mapping!(new_self, "Inventory", "awa", {
             add_method!("getStack", "a", "(I)Lbuw;", false);
         });
         add_mapping!(new_self, "InteractionManager", "emv", {
             add_method!("clickSlot", "a", "(IIILbqy;Lboj;)V", false);
+            add_method!("attackEntity", "a", "(Lboj;Laxk;)V", false);
         });
         add_mapping!(new_self, "ScreenHandler", "bqp", {
             add_field!("syncId", "j", "I", false);
@@ -95,6 +100,19 @@ impl<'j> MappingsManager<'j> {
         });
         add_mapping!(new_self, "Item", "bus", {
             add_method!("getRawId", "a", "(Lbus;)I", true);
+        });
+        add_mapping!(new_self, "Optional", "java/util/Optional", {
+            add_method!("isPresent", "isPresent", "()Z", false);
+            add_method!("get", "get", "()Ljava/lang/Object;", false);
+        });
+        add_mapping!(new_self, "DebugRenderer", "etv", {
+            add_method!("getTargetedEntity", "a", "(Laxk;I)Ljava/util/Optional;", true);
+        });
+        add_mapping!(new_self, "Entity", "axk", {
+            add_method!("isAlive", "bl", "()Z", false);
+        });
+        add_mapping!(new_self, "Hand", "awg", {
+            add_field!("MAIN_HAND", "a", "Lawg;", true);
         });
 
         new_self
