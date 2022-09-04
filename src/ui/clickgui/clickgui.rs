@@ -53,15 +53,24 @@ impl ClickGui {
     pub fn new(jni_env: JNIEnv<'static>, rx: Receiver<ClickGuiMessage>) -> Self {
         let (client_sender, client_receiver) = std::sync::mpsc::channel();
         let client = Client::new(jni_env, client_receiver, client_sender.clone());
+        macro_rules! modules_maker {
+            ($($module:expr),*) => {{
+                let mut temp_vec = Vec::new();
+                $(
+                    temp_vec.push(Rc::new(RefCell::new($module)));
+                )*
+                temp_vec
+            }}
+        }
         Self {
             rx,
             client_sender,
             client,
-            modules: vec![
-                Rc::new(RefCell::new(AutoTotem::new_boxed())),
+            modules: modules_maker!{
+                AutoTotem::new_boxed(),
                 #[cfg(build = "debug")]
-                Rc::new(RefCell::new(TestModule::new_boxed())),
-            ],
+                TestModule::new_boxed()
+            },
         }
     }
 }
