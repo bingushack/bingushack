@@ -65,6 +65,7 @@ impl<'j> MappingsManager<'j> {
             add_field!("interactionManager", "q", "Lemv;", false);
 
             add_method!("getInstance", "D", "()Ldyr;", true);
+            add_method!("getTickDelta", "ai", "()F", false);
         });
         add_mapping!(new_self, "ClientLevel", "ems", {
             add_field!("players", "y", "()Ljava/util/List;", false);
