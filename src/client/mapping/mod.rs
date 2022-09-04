@@ -70,11 +70,19 @@ impl<'j> CM<'j> {
     }
 
     fn add_method(&mut self, key_name: String, ob_name: String, sig: String, is_static: bool) {
-        self.methods.insert(key_name, Mem { name: ob_name, sig });
+        if is_static {
+            self.static_methods.insert(key_name, Mem { name: ob_name, sig });
+        } else {
+            self.methods.insert(key_name, Mem { name: ob_name, sig });
+        }
     }
 
     fn add_field(&mut self, key_name: String, ob_name: String, sig: String, is_static: bool) {
-        self.fields.insert(key_name, Mem { name: ob_name, sig });
+        if is_static {
+            self.static_fields.insert(key_name, Mem { name: ob_name, sig });
+        } else {
+            self.fields.insert(key_name, Mem { name: ob_name, sig });
+        }
     }
 }
 

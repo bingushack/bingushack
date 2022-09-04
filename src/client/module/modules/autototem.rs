@@ -1,5 +1,5 @@
 use super::{
-    AllSettingsType, BingusModule, BingusSettings, BoxedBingusModule, MemTrait, SettingType,
+    AllSettingsType, BingusModule, BingusSettings, BoxedBingusModule, SettingType,
     SettingValue,
 };
 use crate::client::{mapping::MappingsManager, setting::BooleanSetting};
