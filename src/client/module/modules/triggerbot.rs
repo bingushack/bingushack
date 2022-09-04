@@ -40,6 +40,7 @@ impl BingusModule for Triggerbot {
         })
     }
 
+    // todo make it so it won't attack if you're in a container (chest etc)
     fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
         // check if player is targetting an entity
         let minecraft_client = mappings_manager.get("MinecraftClient").unwrap();
@@ -65,6 +66,8 @@ impl BingusModule for Triggerbot {
                 &[
                     JValue::from(player.get_object().unwrap()),
                     JValue::from(3),  // make it the range setting eventually
+                    // look at https://github.com/Wurst-Imperium/Wurst7/blob/f930a43739d4907a73e543c1a193d597a59173f0/src/main/java/net/wurstclient/hacks/TriggerBotHack.java#L92
+                    // to use a float instead of an int and things are just nicer
                 ]
             ).unwrap().l().unwrap()
         );
