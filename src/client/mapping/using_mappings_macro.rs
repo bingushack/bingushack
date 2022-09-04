@@ -34,7 +34,7 @@ macro_rules! call_method_or_get_field {
     }};
 
     // for methods
-    ($env:ident, $cm:ident, $method_name:literal, $is_static:literal, $method_args:block) => {{
+    ($env:ident, $cm:ident, $method_name:literal, $is_static:literal, $method_args:expr) => {{
         let method = if $is_static {
             $cm.get_static_method($method_name)
         } else {
@@ -57,12 +57,4 @@ macro_rules! call_method_or_get_field {
             )
         }
     }};
-}
-
-// basically `vec![]` but with a slice `JValue<'_>`s
-#[macro_export]
-macro_rules! jvalue_args {
-    ($($x:expr),*) => {
-        vec![$($x),*].as_slice()
-    };
 }
