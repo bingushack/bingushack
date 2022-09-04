@@ -68,6 +68,8 @@ impl ClickGui {
             client,
             modules: modules_maker!{
                 AutoTotem::new_boxed(),
+                Triggerbot::new_boxed(),
+
                 #[cfg(build = "debug")]
                 TestModule::new_boxed()
             },
