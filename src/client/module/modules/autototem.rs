@@ -180,7 +180,7 @@ impl BingusModule for AutoTotem {
                     env,
                     interaction_manager,
                     "clickSlot",
-                    true,
+                    false,
                     &[
                         JValue::from(sync_id),
                         JValue::from(found_totem_slot),
@@ -195,7 +195,7 @@ impl BingusModule for AutoTotem {
                     env,
                     interaction_manager,
                     "clickSlot",
-                    true,
+                    false,
                     &[
                         JValue::from(sync_id),
                         JValue::from(45),  // 45 is offhand slot index
