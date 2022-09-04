@@ -2,7 +2,7 @@
 #[macro_export]
 macro_rules! apply_object {
     ($to_apply_cm:ident, $object_to_apply:expr) => {
-        $to_apply_cm.apply_object($object_to_apply);
+        $to_apply_cm.apply_object($object_to_apply)
     };
 }
 
