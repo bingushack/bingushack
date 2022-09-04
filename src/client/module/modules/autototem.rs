@@ -8,7 +8,7 @@ use crate::{
 };
 use crate::client::{mapping::MappingsManager, setting::BooleanSetting};
 use jni::{
-    objects::{JObject, JValue},
+    objects::JValue,
     JNIEnv,
 };
 use std::{
