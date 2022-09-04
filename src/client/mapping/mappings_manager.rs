@@ -73,7 +73,6 @@ impl<'j> MappingsManager<'j> {
             add_field!("currentScreenHandler", "bV", "Lbqp;", false);
 
             add_method!("getInventory", "fr", "()Lboi;", false);
-
             add_method!("getOffHandStack", "et", "()Lbuw;", false);
         });
         add_mapping!(new_self, "Inventory", "awa", {
