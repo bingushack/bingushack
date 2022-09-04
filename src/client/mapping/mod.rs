@@ -2,7 +2,6 @@ mod mappings_manager;
 mod using_mappings_macro;
 
 pub use self::mappings_manager::MappingsManager;
-pub use self::using_mappings_macro::*;
 
 use jni::objects::{JClass, JObject};
 
