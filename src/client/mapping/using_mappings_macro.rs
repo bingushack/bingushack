@@ -11,7 +11,7 @@ macro_rules! apply_object {
 #[macro_export]
 macro_rules! call_method_or_get_field {
     // for fields
-    ($env:ident, $cm:ident, $field_name:literal, $is_static:literal) => {{
+    ($env:expr, $cm:expr, $field_name:literal, $is_static:literal) => {{
         let mappings = if $is_static {
             $cm.get_static_field($field_name)
         } else {
@@ -34,7 +34,7 @@ macro_rules! call_method_or_get_field {
     }};
 
     // for methods
-    ($env:ident, $cm:ident, $method_name:literal, $is_static:literal, $method_args:expr) => {{
+    ($env:expr, $cm:expr, $method_name:literal, $is_static:literal, $method_args:expr) => {{
         let method = if $is_static {
             $cm.get_static_method($method_name)
         } else {
