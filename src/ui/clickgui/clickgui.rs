@@ -59,6 +59,7 @@ impl ClickGui {
             client,
             modules: vec![
                 Rc::new(RefCell::new(AutoTotem::new_boxed())),
+                #[cfg(build = "debug")]
                 Rc::new(RefCell::new(TestModule::new_boxed())),
             ],
         }
