@@ -49,20 +49,22 @@ impl BingusModule for AutoTotem {
         let inventory = mappings_manager.get("Inventory").unwrap();
         apply_object!(
             inventory,
-            call_method_or_get_field!(env, inventory, "getInventory", false, &[]).unwrap().l().unwrap()
+            call_method_or_get_field!(env, player, "getInventory", false, &[]).unwrap().l().unwrap()
         );
 
 
-        let item_stack = mappings_manager.get("ItemStack").unwrap();
-        apply_object!(
-            item_stack,
-            call_method_or_get_field!(env, item_stack, "getOffHandStack", false, &[]).unwrap().l().unwrap()
-        );
         let offhand_item = mappings_manager.get("Item").unwrap();
-        apply_object!(
-            offhand_item,
-            call_method_or_get_field!(env, offhand_item, "getItem", false, &[]).unwrap().l().unwrap()
-        );
+        {
+            let item_stack = mappings_manager.get("ItemStack").unwrap();
+            apply_object!(
+                item_stack,
+                call_method_or_get_field!(env, player, "getOffHandStack", false, &[]).unwrap().l().unwrap()
+            );
+            apply_object!(
+                offhand_item,
+                call_method_or_get_field!(env, item_stack, "getItem", false, &[]).unwrap().l().unwrap()
+            );
+        }
 
         // get TOTEM_OF_UNDYING id
         let totem_of_undying_id = {
