@@ -61,7 +61,7 @@ impl BingusModule for Triggerbot {
                 env,
                 mappings_manager.get("DebugRenderer").unwrap(),
                 "getTargetedEntity",
-                false,
+                true,
                 &[
                     JValue::from(player.get_object().unwrap()),
                     JValue::from(3),  // make it the range setting eventually
@@ -86,9 +86,10 @@ impl BingusModule for Triggerbot {
         // check if player is using an item
         if {
             !call_method_or_get_field!(env, target, "isAlive", false, &[]).unwrap().z().unwrap()
-            || call_method_or_get_field!(env, player, "isUsingItem", false, &[
+            || call_method_or_get_field!(env, player, "isUsingItem", false, &[]).unwrap().z().unwrap()
+            || (call_method_or_get_field!(env, player, "getAttackCooldownProgress", false, &[
                 call_method_or_get_field!(env, minecraft_client, "getTickDelta", false, &[]).unwrap(),
-            ]).unwrap().z().unwrap()
+            ]).unwrap().f().unwrap() != 1.0 )
         } {
             return;
         }
@@ -121,7 +122,8 @@ impl BingusModule for Triggerbot {
                     mappings_manager.get("Hand").unwrap(),
                     "MAIN_HAND",
                     true
-                ).unwrap()
+                ).unwrap(),
+                JValue::from(false),
             ]
         ).unwrap();
     }
