@@ -103,6 +103,6 @@ impl eframe::App for ClickGui {
 
             self.client.client_tick();
         });
-        ctx.request_repaint_after(::core::time::Duration::from_millis(10));
+        ctx.request_repaint();
     }
 }
