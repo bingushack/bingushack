@@ -1,4 +1,5 @@
 use std::ops::RangeInclusive;
+use rand::Rng;
 
 use crate::client::setting::{BingusSetting, SettingValue};
 
@@ -30,6 +31,16 @@ impl RangeSetting {
 
     pub fn get_value_mut(&mut self) -> &mut [f64; 2] {
         &mut self.value
+    }
+
+    pub fn get_random_f64_in_range(&self) -> f64 {
+        let mut rng = rand::thread_rng();
+        rng.gen_range(self.value[0]..=self.value[1])
+    }
+
+    pub fn get_random_usize_in_range(&self) -> usize {
+        let mut rng = rand::thread_rng();
+        rng.gen_range(self.value[0] as usize..=self.value[1] as usize)
     }
 
     pub fn get_range(&self) -> RangeInclusive<f64> {
