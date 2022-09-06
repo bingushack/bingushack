@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // mostly skidded from the egui Slider type
 
 use eframe::{
