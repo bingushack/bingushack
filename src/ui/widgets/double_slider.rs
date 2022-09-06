@@ -28,7 +28,7 @@ use egui::{
 };
 use std::ops::RangeInclusive;
 
-type GetSetValue<'a> = Box<dyn 'a + FnMut(Option<[f64; 2]>) -> [f64; 2]>;
+type GetSetValue<'a> = Box<dyn 'a + FnMut(Option<([f64; 2], usize)>) -> [f64; 2]>;
 
 
 use std::f64::INFINITY;
@@ -76,9 +76,9 @@ pub struct DoubleSlider<'a> {
 impl <'a> DoubleSlider<'a> {
     pub fn new<Num: Numeric>(value: &'a mut [Num; 2], range: RangeInclusive<Num>) -> Self {
         let range_f64 = range.start().to_f64()..=range.end().to_f64();
-        let slf = Self::from_get_set(range_f64, move |v: Option<[f64; 2]>| {
+        let slf = Self::from_get_set(range_f64, move |v: Option<([f64; 2], usize)>| {
             if let Some(v) = v {
-                *value = [Num::from_f64(v[0]), Num::from_f64(v[1])];
+                value[v.1] = Num::from_f64(v.0[v.1]);
             }
             [value[0].to_f64(), value[1].to_f64()]
         });
@@ -92,7 +92,7 @@ impl <'a> DoubleSlider<'a> {
 
     pub fn from_get_set(
         range: RangeInclusive<f64>,
-        get_set_value: impl 'a + FnMut(Option<[f64; 2]>) -> [f64; 2],
+        get_set_value: impl 'a + FnMut(Option<([f64; 2], usize)>) -> [f64; 2],
     ) -> Self {
         Self {
             get_set_value: Box::new(get_set_value),
@@ -191,7 +191,7 @@ impl <'a> DoubleSlider<'a> {
         if let Some(step) = self.step {
             value[i] = (value[i] / step).round() * step;
         }
-        set(&mut self.get_set_value, value);
+        set(&mut self.get_set_value, value, i);
     }
 
     fn rail_rect(&self, rect: &Rect, radius: f32) -> Rect {
@@ -230,8 +230,9 @@ impl <'a> DoubleSlider<'a> {
             let mut closest_handle_distance = f64::INFINITY;
             let mut closest_handle_index = 0;
             for i in 0..2 {
-                let handle_position = self.handle_position(i, rect, position_range.clone());
-                let handle_distance = (handle_position - position as f64).abs();
+                let handle_position = self.handle_position(i, position_range.clone());
+                let click_position = self.pointer_position(pointer_position_2d) as f64;
+                let handle_distance = (handle_position - click_position).abs();
                 if handle_distance < closest_handle_distance {
                     closest_handle_distance = handle_distance;
                     closest_handle_index = i;
@@ -240,8 +241,6 @@ impl <'a> DoubleSlider<'a> {
             self.set_value([new_value; 2], closest_handle_index);
         }
 
-
-        let value = self.get_value();
 
         if response.has_focus() {
             let (dec_key, inc_key) = match self.orientation {
@@ -316,14 +315,9 @@ impl <'a> DoubleSlider<'a> {
     }
 
     // ily copilot
-    fn handle_position(&mut self, i: usize, rect: &Rect, position_range: RangeInclusive<f64>) -> f64 {
-        let value = self.get_value()[i];
-        let normalized = normalized_from_value(value, self.range(), &self.spec);
-        let position = remap_clamp(normalized, 0.0..=1.0, position_range);
-        match self.orientation {
-            SliderOrientation::Horizontal => rect.left() as f64 + position * rect.width() as f64,
-            SliderOrientation::Vertical => rect.bottom() as f64 - position * rect.height() as f64,
-        }
+    fn handle_position(&mut self, i: usize, position_range: RangeInclusive<f64>) -> f64 {
+        let value = self.get_value();
+        self.position_from_value(value, position_range)[i]
     }
 
     fn rail_radius_limit(&self, rect: &Rect) -> f32 {
@@ -351,7 +345,7 @@ impl <'a> DoubleSlider<'a> {
                 - input.num_presses(Key::ArrowLeft) as i32
         };
         let speed = match self.step {
-            Some(step) if change != 0 => step,
+            Some(step) if change != 0 => [step; 2],
             _ => self.current_gradient(&position_range),
         };
         let mut value = self.get_value();
@@ -359,7 +353,7 @@ impl <'a> DoubleSlider<'a> {
             {
                 let response = ui.add({
                     DragValue::new(&mut value[0])
-                        .speed(speed)
+                        .speed(speed[0])
                         .clamp_range(self.clamp_range())
                         .min_decimals(self.min_decimals)
                         .max_decimals_opt(self.max_decimals)
@@ -374,7 +368,7 @@ impl <'a> DoubleSlider<'a> {
             {
                 let response = ui.add({
                     DragValue::new(&mut value[1])
-                        .speed(speed)
+                        .speed(speed[1])
                         .clamp_range(self.clamp_range())
                         .min_decimals(self.min_decimals)
                         .max_decimals_opt(self.max_decimals)
@@ -397,23 +391,24 @@ impl <'a> DoubleSlider<'a> {
         }
     }
 
-    fn current_gradient(&mut self, position_range: &RangeInclusive<f64>) -> f64 {
+    fn current_gradient(&mut self, position_range: &RangeInclusive<f64>) -> [f64; 2] {
         // TODO: handle clamping
         let value = self.get_value();
         let value_from_pos =
             |position: f64| self.value_from_position(position, position_range.clone());
         let pos_from_value = |value: [f64; 2]| self.position_from_value(value, position_range.clone());
-        let a = {
-            let left_value = value_from_pos(pos_from_value(value)[0] - 0.5);
-            let right_value = value_from_pos(pos_from_value(value)[0] + 0.5);
-            right_value - left_value
-        };
-        let b = {
-            let left_value = value_from_pos(pos_from_value(value)[1] - 0.5);
-            let right_value = value_from_pos(pos_from_value(value)[1] + 0.5);
-            right_value - left_value
-        };
-        a / b
+        [
+            {
+                let left_value = value_from_pos(pos_from_value(value)[0] - 0.5);
+                let right_value = value_from_pos(pos_from_value(value)[0] + 0.5);
+                right_value - left_value
+            },
+            {
+                let left_value = value_from_pos(pos_from_value(value)[1] - 0.5);
+                let right_value = value_from_pos(pos_from_value(value)[1] + 0.5);
+                right_value - left_value
+            }
+        ]
     }
 
     fn position_from_value(&self, value: [f64; 2], position_range: RangeInclusive<f64>) -> [f64; 2] {
@@ -572,8 +567,8 @@ fn range_log10(min: f64, max: f64, spec: &SliderSpec) -> (f64, f64) {
     }
 }
 
-fn set(get_set_value: &mut GetSetValue<'_>, value: [f64; 2]) {
-    (get_set_value)(Some(value));
+fn set(get_set_value: &mut GetSetValue<'_>, value: [f64; 2], i: usize) {
+    (get_set_value)(Some((value, i)));
 }
 
 fn normalized_from_value(value: f64, range: RangeInclusive<f64>, spec: &SliderSpec) -> f64 {
