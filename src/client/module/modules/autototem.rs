@@ -30,6 +30,7 @@ impl BingusModule for AutoTotem {
             enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
                 BooleanSetting::new(SettingValue::from(false), "enabled"),
             )))),
+            // todo turn this into a hashmap
             settings: Arc::new(Mutex::new(RefCell::new(vec![
                 Rc::new(RefCell::new(BingusSettings::RangeSetting(
                     RangeSetting::new(
