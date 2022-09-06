@@ -189,6 +189,21 @@ impl <'a> DoubleSlider<'a> {
         self.range.clone()
     }
 
+    pub fn step_by(mut self, step: f64) -> Self {
+        self.step = if step != 0.0 { Some(step) } else { None };
+        self
+    }
+
+    pub fn min_decimals(mut self, min_decimals: usize) -> Self {
+        self.min_decimals = min_decimals;
+        self
+    }
+
+    pub fn max_decimals(mut self, max_decimals: usize) -> Self {
+        self.max_decimals = Some(max_decimals);
+        self
+    }
+
     fn set_value(&mut self, mut value: [f64; 2], i: usize) {
         if self.clamp_to_range {
             let start = *self.range.start();
@@ -425,6 +440,16 @@ impl <'a> DoubleSlider<'a> {
                 right_value - left_value
             }
         ]
+    }
+
+    pub fn text_color(mut self, text_color: Color32) -> Self {
+        self.text_color = Some(text_color);
+        self
+    }
+
+    pub fn logarithmic(mut self, logarithmic: bool) -> Self {
+        self.spec.logarithmic = logarithmic;
+        self
     }
 
     fn position_from_value(&self, value: [f64; 2], position_range: RangeInclusive<f64>) -> [f64; 2] {
