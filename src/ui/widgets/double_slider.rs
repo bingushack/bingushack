@@ -131,6 +131,16 @@ impl <'a> DoubleSlider<'a> {
         self
     }
 
+    pub fn orientation(mut self, orientation: SliderOrientation) -> Self {
+        self.orientation = orientation;
+        self
+    }
+
+    pub fn vertical(mut self) -> Self {
+        self.orientation = SliderOrientation::Vertical;
+        self
+    }
+
     pub fn get_value(&mut self) -> [f64; 2] {
         (self.get_set_value)(None)
     }
