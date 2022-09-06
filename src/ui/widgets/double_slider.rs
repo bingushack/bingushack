@@ -3,6 +3,7 @@
 use eframe::{
     egui,
     emath,
+    epaint,
 };
 use emath::{
     Numeric,
@@ -11,6 +12,7 @@ use emath::{
     Pos2,
     remap_clamp,
     vec2,
+    pos2,
     lerp,
     remap,
 };
@@ -192,6 +194,19 @@ impl <'a> DoubleSlider<'a> {
         set(&mut self.get_set_value, value);
     }
 
+    fn rail_rect(&self, rect: &Rect, radius: f32) -> Rect {
+        match self.orientation {
+            SliderOrientation::Horizontal => Rect::from_min_max(
+                pos2(rect.left(), rect.center().y - radius),
+                pos2(rect.right(), rect.center().y + radius),
+            ),
+            SliderOrientation::Vertical => Rect::from_min_max(
+                pos2(rect.center().x - radius, rect.top()),
+                pos2(rect.center().x + radius, rect.bottom()),
+            ),
+        }
+    }
+
     fn slider_ui(&mut self, ui: &mut Ui, response: &Response) {
         let rect = &response.rect;
         let position_range = {
@@ -224,6 +239,80 @@ impl <'a> DoubleSlider<'a> {
             }
             self.set_value([new_value; 2], closest_handle_index);
         }
+
+
+        let value = self.get_value();
+
+        if response.has_focus() {
+            let (dec_key, inc_key) = match self.orientation {
+                SliderOrientation::Horizontal => (Key::ArrowLeft, Key::ArrowRight),
+                // Note that this is for moving the slider position,
+                // so up = decrement y coordinate:
+                SliderOrientation::Vertical => (Key::ArrowUp, Key::ArrowDown),
+            };
+
+            let decrement = ui.input().num_presses(dec_key);
+            let increment = ui.input().num_presses(inc_key);
+            let kb_step = increment as f64 - decrement as f64;
+
+            if kb_step != 0.0 {
+                let prev_value = self.get_value();
+                let prev_position = self.position_from_value(prev_value, position_range.clone());
+                for i in 0..2 {
+                    let new_position = prev_position[i] + kb_step;
+                    let new_value = match self.step {
+                        Some(step) => prev_value[i] + (kb_step as f64 * step),
+                        None if self.smart_aim => {
+                            let aim_radius = ui.input().aim_radius() as f64;
+                            emath::smart_aim::best_in_range_f64(
+                                self.value_from_position(
+                                    new_position - aim_radius,
+                                    position_range.clone(),
+                                ),
+                                self.value_from_position(
+                                    new_position + aim_radius,
+                                    position_range.clone(),
+                                ),
+                            )
+                        },
+                        _ => self.value_from_position(new_position, position_range.clone()),
+                    };
+                    self.set_value([new_value; 2], i);
+                }
+            }
+        }
+
+        // Paint it:
+        if ui.is_rect_visible(response.rect) {
+            let value = self.get_value();
+
+            let rail_radius = ui.painter().round_to_pixel(self.rail_radius_limit(rect));
+            let rail_rect = self.rail_rect(rect, rail_radius);
+
+            let visuals = ui.style().interact(response);
+            ui.painter().add(epaint::RectShape {
+                rect: rail_rect,
+                rounding: ui.visuals().widgets.inactive.rounding,
+                fill: ui.visuals().widgets.inactive.bg_fill,
+                // fill: visuals.bg_fill,
+                // fill: ui.visuals().extreme_bg_color,
+                stroke: Default::default(),
+                // stroke: visuals.bg_stroke,
+                // stroke: ui.visuals().widgets.inactive.bg_stroke,
+            });
+
+            let position_1d_array = self.position_from_value(value, position_range);
+
+            for i in 0..2 {
+                let center = self.marker_center(position_1d_array[i] as f32, &rail_rect);
+                ui.painter().add(epaint::CircleShape {
+                    center,
+                    radius: self.handle_radius(rect) + visuals.expansion,
+                    fill: visuals.bg_fill,
+                    stroke: visuals.fg_stroke,
+                });
+            }
+        }
     }
 
     // ily copilot
@@ -234,6 +323,20 @@ impl <'a> DoubleSlider<'a> {
         match self.orientation {
             SliderOrientation::Horizontal => rect.left() as f64 + position * rect.width() as f64,
             SliderOrientation::Vertical => rect.bottom() as f64 - position * rect.height() as f64,
+        }
+    }
+
+    fn rail_radius_limit(&self, rect: &Rect) -> f32 {
+        match self.orientation {
+            SliderOrientation::Horizontal => (rect.height() / 4.0).at_least(2.0),
+            SliderOrientation::Vertical => (rect.width() / 4.0).at_least(2.0),
+        }
+    }
+
+    fn marker_center(&self, position_1d: f32, rail_rect: &Rect) -> Pos2 {
+        match self.orientation {
+            SliderOrientation::Horizontal => pos2(position_1d, rail_rect.center().y),
+            SliderOrientation::Vertical => pos2(rail_rect.center().x, position_1d),
         }
     }
 
@@ -300,21 +403,28 @@ impl <'a> DoubleSlider<'a> {
         let value_from_pos =
             |position: f64| self.value_from_position(position, position_range.clone());
         let pos_from_value = |value: [f64; 2]| self.position_from_value(value, position_range.clone());
-        let left_value = value_from_pos(pos_from_value(value) - 0.5);
-        let right_value = value_from_pos(pos_from_value(value) + 0.5);
-        right_value - left_value
-    }
-
-    fn position_from_value(&self, value: [f64; 2], position_range: RangeInclusive<f64>) -> f64 {
         let a = {
-            let normalized = normalized_from_value(value[0], self.range(), &self.spec);
-            lerp(position_range.clone(), normalized)
+            let left_value = value_from_pos(pos_from_value(value)[0] - 0.5);
+            let right_value = value_from_pos(pos_from_value(value)[0] + 0.5);
+            right_value - left_value
         };
         let b = {
+            let left_value = value_from_pos(pos_from_value(value)[1] - 0.5);
+            let right_value = value_from_pos(pos_from_value(value)[1] + 0.5);
+            right_value - left_value
+        };
+        a / b
+    }
+
+    fn position_from_value(&self, value: [f64; 2], position_range: RangeInclusive<f64>) -> [f64; 2] {
+        [{
+            let normalized = normalized_from_value(value[0], self.range(), &self.spec);
+            lerp(position_range.clone(), normalized)
+        },
+        {
             let normalized = normalized_from_value(value[1], self.range(), &self.spec);
             lerp(position_range, normalized)
-        };
-        (a + b) / 2.0
+        }]
     }
 
     fn add_contents(&mut self, ui: &mut Ui) -> Response {
