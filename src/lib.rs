@@ -1,4 +1,4 @@
-#![feature(cell_leak, type_alias_impl_trait)]
+#![feature(cell_leak)]
 
 mod client;
 mod ui;
