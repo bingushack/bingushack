@@ -12,6 +12,7 @@ pub enum SettingValue {
     Int(i32),
     String(String),
     Float(f64),
+    Range([f64; 2]),
 }
 
 impl TryInto<f64> for SettingValue {
@@ -70,6 +71,7 @@ impl TryInto<String> for SettingValue {
             SettingValue::Bool(b) => Ok(b.to_string()),
             SettingValue::Int(i) => Ok(i.to_string()),
             SettingValue::Float(f) => Ok(f.to_string()),
+            SettingValue::Range(r) => Ok(format!("{}..={}", r[0], r[1])),
         }
     }
 }
@@ -77,5 +79,21 @@ impl TryInto<String> for SettingValue {
 impl From<String> for SettingValue {
     fn from(s: String) -> Self {
         SettingValue::String(s)
+    }
+}
+
+impl TryInto<[f64; 2]> for SettingValue {
+    type Error = ();
+    fn try_into(self) -> Result<[f64; 2], Self::Error> {
+        match self {
+            SettingValue::Range(r) => Ok(r),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<[f64; 2]> for SettingValue {
+    fn from(r: [f64; 2]) -> Self {
+        SettingValue::Range(r)
     }
 }

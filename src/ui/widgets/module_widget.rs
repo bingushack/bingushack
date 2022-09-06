@@ -2,7 +2,7 @@ use crate::client::{module::BingusModule, setting::*};
 use eframe::egui;
 use std::{cell::RefMut, rc::Rc};
 
-use super::toggle;
+use super::{toggle, DoubleSlider};
 
 fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::Response {
     let desired_size = ui.spacing().interact_size.y * egui::vec2(5.0, 2.0);
@@ -40,6 +40,12 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
                                 second_leaked.get_float_mut().get_value_mut(),
                                 range,
                             ));
+                        }
+                        BingusSettings::RangeSetting(_) => {
+                            ui.label(second_leaked.get_name());
+                            let range = second_leaked.get_range();
+                            let value = second_leaked.get_range_value_mut();
+                            ui.add(DoubleSlider::new(value, range));
                         }
                     }
                     // undo second_leaked
