@@ -194,10 +194,12 @@ impl <'a> DoubleSlider<'a> {
         self
     }
 
+    /*
     pub fn min_decimals(mut self, min_decimals: usize) -> Self {
         self.min_decimals = min_decimals;
         self
     }
+    */
 
     pub fn max_decimals(mut self, max_decimals: usize) -> Self {
         self.max_decimals = Some(max_decimals);

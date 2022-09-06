@@ -32,7 +32,13 @@ impl BingusModule for AutoTotem {
             )))),
             settings: Arc::new(Mutex::new(RefCell::new(vec![
                 Rc::new(RefCell::new(BingusSettings::RangeSetting(
-                    RangeSetting::new(SettingValue::from(0.0), 0.0..=20.0, "delay (ticks)"),
+                    RangeSetting::new(
+                        SettingValue::from(0.0),
+                        0.0..=20.0,
+                        Some(0),
+                        Some(1.0),
+                        "delay (ticks)"
+                    ),
                 ))),
             ]))),
         })

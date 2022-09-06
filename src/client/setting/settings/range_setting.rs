@@ -6,14 +6,24 @@ use crate::client::setting::{BingusSetting, SettingValue};
 pub struct RangeSetting {
     value: [f64; 2],
     range: RangeInclusive<f64>,
+    max_decimals: Option<usize>,
+    step_by: Option<f64>,
     name: String,
 }
 
 impl RangeSetting {
-    pub fn new(value: SettingValue, range: RangeInclusive<f64>, name: &str) -> Self {
+    pub fn new(
+        value: SettingValue,
+        range: RangeInclusive<f64>,
+        max_decimals: Option<usize>,
+        step_by: Option<f64>,
+        name: &str
+    ) -> Self {
         RangeSetting {
             value: value.try_into().unwrap(),
             range,
+            max_decimals,
+            step_by,
             name: name.to_string(),
         }
     }
@@ -24,6 +34,14 @@ impl RangeSetting {
 
     pub fn get_range(&self) -> RangeInclusive<f64> {
         self.range.clone()
+    }
+
+    pub fn get_max_decimals(&self) -> Option<usize> {
+        self.max_decimals
+    }
+
+    pub fn get_step_by(&self) -> Option<f64> {
+        self.step_by
     }
 }
 

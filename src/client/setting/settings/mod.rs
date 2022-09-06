@@ -63,6 +63,22 @@ impl BingusSettings {
             _ => panic!("get_range called on a non-range setting"),
         }
     }
+
+    pub fn get_max_decimals(&self) -> Option<usize> {
+        match self {
+            // BingusSettings::FloatSetting(setting) => setting.get_max_decimals(),
+            BingusSettings::RangeSetting(setting) => setting.get_max_decimals(),
+            _ => None,
+        }
+    }
+
+    pub fn get_step_by(&self) -> Option<f64> {
+        match self {
+            // BingusSettings::FloatSetting(setting) => setting.get_step_by(),
+            BingusSettings::RangeSetting(setting) => setting.get_step_by(),
+            _ => None,
+        }
+    }
 }
 
 // todo I NEED A MACRO FOR THIS

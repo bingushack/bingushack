@@ -44,8 +44,17 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
                         BingusSettings::RangeSetting(_) => {
                             ui.label(second_leaked.get_name());
                             let range = second_leaked.get_range();
+                            let max_decimals = second_leaked.get_max_decimals();
+                            let step_by = second_leaked.get_step_by();
                             let value = second_leaked.get_range_value_mut();
-                            ui.add(DoubleSlider::new(value, range));
+                            let mut double_slider = DoubleSlider::new(value, range);
+                            if let Some(max_decimals) = max_decimals {
+                                double_slider = double_slider.max_decimals(max_decimals);
+                            }
+                            if let Some(step_by) = step_by {
+                                double_slider = double_slider.step_by(step_by);
+                            }
+                            ui.add(double_slider);
                         }
                     }
                     // undo second_leaked
