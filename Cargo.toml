@@ -12,6 +12,7 @@ eframe = { path = "./lib/egui/eframe" }
 glutin = "0.28.0"
 obfstr = "0.4.1"
 uniqueid = "0.2.6"
+rand = "0.8.5"
 
 [lib]
 crate-type = ["dylib"]
