@@ -67,13 +67,24 @@ impl ClickGui {
             rx,
             client_sender,
             client,
-            modules: modules_maker!{
-                AutoTotem::new_boxed(),
-                Triggerbot::new_boxed(),
+            modules: {
+                #[cfg(build = "debug")]
+                let mut modules;
+                #[cfg(not(build = "debug"))]
+                let modules;
+
+                modules = modules_maker![
+                    AutoTotem::new_boxed(),
+                    Triggerbot::new_boxed()
+                ];
 
                 #[cfg(build = "debug")]
-                TestModule::new_boxed()
-            },
+                modules.extend_from_slice(&modules_maker![
+                    TestModule::new_boxed()
+                ]);
+
+                modules
+            }
         }
     }
 }
