@@ -53,7 +53,7 @@ pub enum SliderOrientation {
     Vertical,
 }
 
-struct DoubleSlider<'a> {
+pub struct DoubleSlider<'a> {
     get_set_value: GetSetValue<'a>,
     range: RangeInclusive<f64>,
     spec: SliderSpec,
