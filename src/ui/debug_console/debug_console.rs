@@ -1,5 +1,4 @@
 use std::sync::mpsc::{Receiver, Sender};
-use super::DoubleSlider;
 
 use eframe::egui;
 
