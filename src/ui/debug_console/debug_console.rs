@@ -26,7 +26,6 @@ pub fn run_debug_console(app: DebugConsole) {
 }
 
 pub struct DebugConsole {
-    double_slider_values: [f64; 2],
     text: Vec<String>,
     rx: Receiver<String>,
     #[allow(dead_code)]
@@ -36,7 +35,6 @@ pub struct DebugConsole {
 impl DebugConsole {
     pub fn new(rx: Receiver<String>, tx: Sender<String>) -> Self {
         Self {
-            double_slider_values: [3.0, 7.0],
             text: vec![String::from("")],
             rx,
             tx,
@@ -54,8 +52,6 @@ impl eframe::App for DebugConsole {
             ui.hyperlink("http://bingushack.cc");
 
             ui.separator();
-
-            ui.add(DoubleSlider::new(&mut self.double_slider_values, 0.0..=20.0));
 
             ui.label(self.text.join("\n"));
         });
