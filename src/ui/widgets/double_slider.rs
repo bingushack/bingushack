@@ -191,6 +191,12 @@ impl <'a> DoubleSlider<'a> {
         if let Some(step) = self.step {
             value[i] = (value[i] / step).round() * step;
         }
+
+        // make sure `value[0]` is always smaller than `value[1]`
+        if value[0] > value[1] {
+            return;
+        }
+
         set(&mut self.get_set_value, value, i);
     }
 
