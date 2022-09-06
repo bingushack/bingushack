@@ -69,6 +69,7 @@ impl<'j> MappingsManager<'j> {
         });
         add_mapping!(new_self, "ClientLevel", "ems", {
             add_field!("players", "y", "()Ljava/util/List;", false);
+            add_method!("getGameTime", "U", "()J", false);  // `J` is long (i64)
         });
         add_mapping!(new_self, "PlayerEntity", "boj", {
             add_field!("currentScreenHandler", "bV", "Lbqp;", false);

@@ -5,6 +5,10 @@ use crate::client::{
     mapping::MappingsManager,
     setting::{BooleanSetting, FloatSetting},
 };
+use crate::{
+    apply_object,
+    call_method_or_get_field,
+};
 use jni::JNIEnv;
 use std::{
     cell::RefCell,
@@ -27,13 +31,29 @@ impl BingusModule for TestModule {
                 BingusSettings::FloatSetting(FloatSetting::new(
                     SettingValue::from(0.0),
                     "float",
-                    0.0..=5.0,
+                    0.0..=100.0,
                 )),
             ))]))),
         })
     }
 
-    fn tick(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
+        let minecraft_client = mappings_manager.get("MinecraftClient").unwrap();
+        apply_object!(
+            minecraft_client,
+            call_method_or_get_field!(env, minecraft_client, "getInstance", true, &[]).unwrap().l().unwrap()
+        );
+
+        let world = mappings_manager.get("ClientLevel").unwrap();
+        apply_object!(
+            world,
+            call_method_or_get_field!(env, minecraft_client, "level", false).unwrap().l().unwrap()
+        );
+
+        let game_time = call_method_or_get_field!(env, world, "getGameTime", false, &[]).unwrap().j().unwrap();
+
+        println!("game time: {game_time}");
+    }
 
     fn on_load(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
