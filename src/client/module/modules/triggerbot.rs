@@ -22,6 +22,7 @@ use std::{
 pub struct Triggerbot {
     enabled: SettingType,
     settings: AllSettingsType,
+    was_enabled: SettingType,
 }
 
 impl BingusModule for Triggerbot {
@@ -145,6 +146,10 @@ impl BingusModule for Triggerbot {
 
     fn get_enabled_setting(&self) -> SettingType {
         Arc::clone(&self.enabled)
+    }
+
+    fn get_was_enabled_setting(&self) -> SettingType {
+        Arc::clone(&self.was_enabled)
     }
 
     fn to_name(&self) -> String {

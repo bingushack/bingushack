@@ -22,6 +22,10 @@ pub struct AutoTotem {
     // todo make this enabled settings boilerplate shit a proc macro
     enabled: SettingType,
     settings: AllSettingsType,
+    was_enabled: SettingType,
+
+    prev_game_time: i64,
+    next_delay: i64,
 }
 
 impl BingusModule for AutoTotem {
@@ -34,14 +38,16 @@ impl BingusModule for AutoTotem {
             settings: Arc::new(Mutex::new(RefCell::new(vec![
                 Rc::new(RefCell::new(BingusSettings::RangeSetting(
                     RangeSetting::new(
-                        SettingValue::from([0.0, 20.0]),
-                        0.0..=100.0,
+                        SettingValue::from([160.0, 240.0]),
+                        0.0..=240.0,
                         Some(0),
                         Some(1.0),
                         "delay (ticks)"
                     ),
                 ))),
             ]))),
+            prev_game_time: 0,
+            next_delay: 0,
         })
     }
 
@@ -50,6 +56,12 @@ impl BingusModule for AutoTotem {
         apply_object!(
             minecraft_client,
             call_method_or_get_field!(env, minecraft_client, "getInstance", true, &[]).unwrap().l().unwrap()
+        );
+
+        let world = mappings_manager.get("ClientLevel").unwrap();
+        apply_object!(
+            world,
+            call_method_or_get_field!(env, minecraft_client, "level", false).unwrap().l().unwrap()
         );
 
         let player = mappings_manager.get("PlayerEntity").unwrap();
@@ -106,7 +118,24 @@ impl BingusModule for AutoTotem {
             &[JValue::from(offhand_item.get_object().unwrap())]
         ).unwrap().i().unwrap() == totem_of_undying_id;
 
+        let current_game_time = call_method_or_get_field!(env, world, "getGameTime", false, &[]).unwrap().j().unwrap();
         if !offhand_is_totem {
+            // check if the delay is up
+            {
+                println!("{} + {} > {}", self.prev_game_time, self.next_delay, current_game_time);
+                if self.prev_game_time + self.next_delay >= current_game_time {
+                    let next_delay = {
+                        let settings_mutex_guard = self.settings.lock().unwrap();
+                        let settings = settings_mutex_guard.borrow();
+                        let range_setting: RangeSetting = settings.get(0).unwrap().borrow().clone().try_into().unwrap();
+                        range_setting.get_random_i64_in_range()
+                    };
+                    self.next_delay = next_delay;
+                    self.prev_game_time = current_game_time;
+                    return;
+                }
+            }
+
             // todo add a check if a totem is even in the inventory with containsAny
             // find totem in inventory
             let mut found_totem_slot: Option<i32> = None;
@@ -224,7 +253,23 @@ impl BingusModule for AutoTotem {
 
     fn on_unload(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_enable(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn on_enable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
+        let minecraft_client = mappings_manager.get("MinecraftClient").unwrap();
+        apply_object!(
+            minecraft_client,
+            call_method_or_get_field!(env, minecraft_client, "getInstance", true, &[]).unwrap().l().unwrap()
+        );
+
+        let world = mappings_manager.get("ClientLevel").unwrap();
+        apply_object!(
+            world,
+            call_method_or_get_field!(env, minecraft_client, "level", false).unwrap().l().unwrap()
+        );
+
+        let current_game_time = call_method_or_get_field!(env, world, "getGameTime", false, &[]).unwrap().j().unwrap();
+
+        self.prev_game_time = current_game_time;
+    }
 
     fn on_disable(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
@@ -234,6 +279,10 @@ impl BingusModule for AutoTotem {
 
     fn get_enabled_setting(&self) -> SettingType {
         Arc::clone(&self.enabled)
+    }
+
+    fn get_was_enabled_setting(&self) -> SettingType {
+        Arc::clone(&self.was_enabled)
     }
 
     fn to_name(&self) -> String {

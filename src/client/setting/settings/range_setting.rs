@@ -38,9 +38,9 @@ impl RangeSetting {
         rng.gen_range(self.value[0]..=self.value[1])
     }
 
-    pub fn get_random_usize_in_range(&self) -> usize {
+    pub fn get_random_i64_in_range(&self) -> i64 {
         let mut rng = rand::thread_rng();
-        rng.gen_range(self.value[0] as usize..=self.value[1] as usize)
+        rng.gen_range(self.value[0] as i64..=self.value[1] as i64)
     }
 
     pub fn get_range(&self) -> RangeInclusive<f64> {

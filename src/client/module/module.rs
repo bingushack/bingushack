@@ -25,5 +25,7 @@ pub trait BingusModule {
 
     fn get_enabled_setting(&self) -> SettingType;
 
+    fn get_was_enabled_setting(&self) -> SettingType;
+
     fn to_name(&self) -> String;
 }
