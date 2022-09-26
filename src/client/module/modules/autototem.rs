@@ -22,7 +22,6 @@ pub struct AutoTotem {
     // todo make this enabled settings boilerplate shit a proc macro
     enabled: SettingType,
     settings: AllSettingsType,
-    was_enabled: SettingType,
 
     prev_game_time: i64,
     next_delay: i64,
@@ -122,8 +121,8 @@ impl BingusModule for AutoTotem {
         if !offhand_is_totem {
             // check if the delay is up
             {
-                println!("{} + {} > {}", self.prev_game_time, self.next_delay, current_game_time);
-                if self.prev_game_time + self.next_delay >= current_game_time {
+                //crate::message_box(&*format!("{} - {} < {}", current_game_time, self.prev_game_time, self.next_delay));
+                if current_game_time - self.prev_game_time < self.next_delay {
                     let next_delay = {
                         let settings_mutex_guard = self.settings.lock().unwrap();
                         let settings = settings_mutex_guard.borrow();
@@ -246,6 +245,8 @@ impl BingusModule for AutoTotem {
                     ]
                 ).unwrap();
             }
+        } else {
+            self.prev_game_time = current_game_time;
         }
     }
 
@@ -279,10 +280,6 @@ impl BingusModule for AutoTotem {
 
     fn get_enabled_setting(&self) -> SettingType {
         Arc::clone(&self.enabled)
-    }
-
-    fn get_was_enabled_setting(&self) -> SettingType {
-        Arc::clone(&self.was_enabled)
     }
 
     fn to_name(&self) -> String {
