@@ -38,7 +38,7 @@ impl BingusModule for AutoTotem {
                         0.0..=240.0,
                         Some(0),
                         Some(1.0),
-                        "delay (ticks)"
+                        "delay (milliseconds)"
                     ),
                 ))),
             ]))),
