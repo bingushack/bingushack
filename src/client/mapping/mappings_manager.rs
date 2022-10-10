@@ -108,7 +108,7 @@ impl<'j> MappingsManager<'j> {
         add_mapping!(new_self, "Entity", "bbn", {
             add_method!("isAlive", "bo", "()Z", false);
         });
-        add_mapping!(new_self, "Hand", "awg", {
+        add_mapping!(new_self, "Hand", "bai", {
             add_field!("MAIN_HAND", "a", "Lbai;", true);
         });
 
