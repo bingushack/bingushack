@@ -37,11 +37,11 @@ impl BingusModule for AutoTotem {
             settings: Arc::new(Mutex::new(RefCell::new(vec![
                 Rc::new(RefCell::new(BingusSettings::RangeSetting(
                     RangeSetting::new(
-                        SettingValue::from([500.0, 1000.0]),
-                        0.0..=2000.0,
+                        SettingValue::from([200.0, 250.0]),
+                        0.0..=500.0,
                         Some(0),
                         Some(1.0),
-                        "delay (10th of a second)",
+                        "delay (100ths of a second)",
                     ),
                 ))),
             ]))),
@@ -121,7 +121,7 @@ impl BingusModule for AutoTotem {
                     let range_setting: RangeSetting = bingus_setting_ref.clone().try_into().unwrap();
                     range_setting.get_random_i64_in_range() as u128
                 };
-                if time_since_lost_totem < next_delay {
+                if time_since_lost_totem < next_delay * 10 {
                     return;
                 } else {
                     self.needing_swap_time = SystemTime::now();
