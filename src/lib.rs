@@ -131,14 +131,14 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     // this is ugly
     let mut hwnd: winapi::shared::windef::HWND;
     {
-        let window_name = CString::new("Minecraft 1.18.2").unwrap();
+        let window_name = CString::new("Minecraft 1.19.2").unwrap();
         hwnd = FindWindowA(null_mut(), window_name.as_ptr());
         let window_name =
-            CString::new("Minecraft 1.18.2 - Multiplayer (3rd-party Server)").unwrap();
+            CString::new("Minecraft 1.19.2 - Multiplayer (3rd-party Server)").unwrap();
         if hwnd == null_mut() {
             hwnd = FindWindowA(null_mut(), window_name.as_ptr());
         }
-        let window_name = CString::new("Minecraft 1.18.2 - Singleplayer").unwrap();
+        let window_name = CString::new("Minecraft 1.19.2 - Singleplayer").unwrap();
         if hwnd == null_mut() {
             hwnd = FindWindowA(null_mut(), window_name.as_ptr());
         }

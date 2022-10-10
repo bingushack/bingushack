@@ -2,6 +2,7 @@ use super::{
     AllSettingsType, BingusModule, BingusSettings, BoxedBingusModule, SettingType,
     SettingValue,
 };
+use crate::client::setting::RangeSetting;
 use crate::{
     apply_object,
     call_method_or_get_field,
@@ -29,7 +30,18 @@ impl BingusModule for AutoTotem {
             enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
                 BooleanSetting::new(SettingValue::from(false), "enabled"),
             )))),
-            settings: Arc::new(Mutex::new(RefCell::new(vec![]))),
+            // todo turn this into a hashmap
+            settings: Arc::new(Mutex::new(RefCell::new(vec![
+                Rc::new(RefCell::new(BingusSettings::RangeSetting(
+                    RangeSetting::new(
+                        SettingValue::from([160.0, 240.0]),
+                        0.0..=240.0,
+                        Some(0),
+                        Some(1.0),
+                        "delay (milliseconds)"
+                    ),
+                ))),
+            ]))),
         })
     }
 

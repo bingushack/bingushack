@@ -10,6 +10,7 @@ use jni::JNIEnv;
 use std::{
     cell::RefCell,
     rc::Rc,
+    sync::Mutex,
     sync::mpsc::{Receiver, Sender},
 };
 
@@ -43,7 +44,7 @@ pub struct ClickGui {
 
     // sender to the client itself
     client_sender: Sender<ClickGuiMessage>,
-    client: Client, // why does the ClickGui contain the Client and not the other way around????
+    client: Mutex<Client>, // why does the ClickGui contain the Client and not the other way around????
     // why are the modules in the ClickGui wtf???
     // prolly a better way to do this with hashmaps/hashsets in the future
     modules: Vec<Rc<RefCell<BoxedBingusModule>>>,
@@ -52,7 +53,7 @@ pub struct ClickGui {
 impl ClickGui {
     pub fn new(jni_env: JNIEnv<'static>, rx: Receiver<ClickGuiMessage>) -> Self {
         let (client_sender, client_receiver) = std::sync::mpsc::channel();
-        let client = Client::new(jni_env, client_receiver, client_sender.clone());
+        let client = Mutex::new(Client::new(jni_env, client_receiver, client_sender.clone()));
         macro_rules! modules_maker {
             ($($module:expr),*) => {{
                 let mut temp_vec = Vec::new();
@@ -66,13 +67,24 @@ impl ClickGui {
             rx,
             client_sender,
             client,
-            modules: modules_maker!{
-                AutoTotem::new_boxed(),
-                Triggerbot::new_boxed(),
+            modules: {
+                #[cfg(build = "debug")]
+                let mut modules;
+                #[cfg(not(build = "debug"))]
+                let modules;
+
+                modules = modules_maker![
+                    AutoTotem::new_boxed(),
+                    Triggerbot::new_boxed()
+                ];
 
                 #[cfg(build = "debug")]
-                TestModule::new_boxed()
-            },
+                modules.extend_from_slice(&modules_maker![
+                    TestModule::new_boxed()
+                ]);
+
+                modules
+            }
         }
     }
 }
@@ -100,9 +112,8 @@ impl eframe::App for ClickGui {
                         .unwrap();
                 }
             }
-
-            self.client.client_tick();
         });
-        ctx.request_repaint_after(::core::time::Duration::from_millis(10));
+        self.client.lock().unwrap().client_tick();
+        ctx.request_repaint();
     }
 }

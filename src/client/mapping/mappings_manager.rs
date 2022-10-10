@@ -1,4 +1,4 @@
-use crate::client::mapping::CM;
+use crate::{client::mapping::CM, message_box};
 use jni::JNIEnv;
 use std::{collections::HashMap, rc::Rc};
 
@@ -59,61 +59,60 @@ impl<'j> MappingsManager<'j> {
         let mut new_self = MappingsManager::default();
 
         // add the mappings
-        add_mapping!(new_self, "MinecraftClient", "dyr", {
-            add_field!("player", "s", "Lepw;", false);
-            add_field!("level", "r", "Lems;", false);
-            add_field!("interactionManager", "q", "Lemv;", false);
+        add_mapping!(new_self, "MinecraftClient", "efu", {
+            add_field!("player", "t", "Leyw;", false);
+            add_field!("level", "s", "Leuv;", false);
+            add_field!("interactionManager", "r", "Leuy;", false);
 
-            add_method!("getInstance", "D", "()Ldyr;", true);
-            add_method!("getTickDelta", "ai", "()F", false);
-        });
-        add_mapping!(new_self, "ClientLevel", "ems", {
-            add_field!("players", "y", "()Ljava/util/List;", false);
+            add_method!("getInstance", "I", "()Lefu;", true);
+            add_method!("getTickDelta", "am", "()F", false);
         });
         add_mapping!(new_self, "PlayerEntity", "boj", {
-            add_field!("currentScreenHandler", "bV", "Lbqp;", false);
+            add_field!("currentScreenHandler", "bU", "Lbwm;", false);
 
-            add_method!("getInventory", "fr", "()Lboi;", false);
-            add_method!("getOffHandStack", "et", "()Lbuw;", false);
-            add_method!("isUsingItem", "eM", "()Z", false);
-            add_method!("swingHand", "a", "(Lawg;Z)V", false);
+            add_method!("getInventory", "fA", "()Lbub;", false);
+            add_method!("getOffHandStack", "eA", "()Lcax;", false);
+            add_method!("isUsingItem", "eT", "()Z", false);
+            add_method!("swingHand", "a", "(Lbai;Z)V", false);
             add_method!("getAttackCooldownProgress", "v", "(F)F", false);
         });
-        add_mapping!(new_self, "Inventory", "awa", {
-            add_method!("getStack", "a", "(I)Lbuw;", false);
+        add_mapping!(new_self, "Inventory", "bac", {
+            add_method!("getStack", "a", "(I)Lcax;", false);
         });
-        add_mapping!(new_self, "InteractionManager", "emv", {
-            add_method!("clickSlot", "a", "(IIILbqy;Lboj;)V", false);
-            add_method!("attackEntity", "a", "(Lboj;Laxk;)V", false);
+        add_mapping!(new_self, "InteractionManager", "euy", {
+            add_method!("clickSlot", "a", "(IIILbwv;Lbuc;)V", false);
+            add_method!("attackEntity", "a", "(Lbuc;Lbbn;)V", false);
         });
-        add_mapping!(new_self, "ScreenHandler", "bqp", {
+        add_mapping!(new_self, "ScreenHandler", "bwm", {
             add_field!("syncId", "j", "I", false);
         });
-        add_mapping!(new_self, "SlotActionType", "bqy", {
-            add_field!("PICKUP", "a", "Lbqy;", true);
+        add_mapping!(new_self, "SlotActionType", "bwv", {
+            add_field!("PICKUP", "a", "Lbwv;", true);
         });
-        add_mapping!(new_self, "Items", "buy", {
-            add_field!("TOTEM_OF_UNDYING", "sw", "Lbus;", true);
+        add_mapping!(new_self, "Items", "caz", {  // breaks
+            add_field!("TOTEM_OF_UNDYING", "tn", "Lcat;", true);
         });
-        add_mapping!(new_self, "ItemStack", "buw", {
-            add_method!("getItem", "c", "()Lbus;", false);
+        add_mapping!(new_self, "ItemStack", "cax", {
+            add_method!("getItem", "c", "()Lcat;", false);
         });
-        add_mapping!(new_self, "Item", "bus", {
-            add_method!("getRawId", "a", "(Lbus;)I", true);
+        add_mapping!(new_self, "Item", "cat", {
+            add_method!("getRawId", "a", "(Lcat;)I", true);
         });
         add_mapping!(new_self, "Optional", "java/util/Optional", {
             add_method!("isPresent", "isPresent", "()Z", false);
             add_method!("get", "get", "()Ljava/lang/Object;", false);
         });
-        add_mapping!(new_self, "DebugRenderer", "etv", {
-            add_method!("getTargetedEntity", "a", "(Laxk;I)Ljava/util/Optional;", true);
+        add_mapping!(new_self, "DebugRenderer", "fcv", {
+            add_method!("getTargetedEntity", "a", "(Lbbn;I)Ljava/util/Optional;", true);
         });
-        add_mapping!(new_self, "Entity", "axk", {
-            add_method!("isAlive", "bl", "()Z", false);
+        add_mapping!(new_self, "Entity", "bbn", {
+            add_method!("isAlive", "bo", "()Z", false);
         });
         add_mapping!(new_self, "Hand", "awg", {
-            add_field!("MAIN_HAND", "a", "Lawg;", true);
+            add_field!("MAIN_HAND", "a", "Lbai;", true);
         });
+
+        message_box("after mappings");
 
         new_self
     }
