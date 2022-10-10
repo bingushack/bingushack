@@ -43,16 +43,6 @@ impl BingusModule for TestModule {
             minecraft_client,
             call_method_or_get_field!(env, minecraft_client, "getInstance", true, &[]).unwrap().l().unwrap()
         );
-
-        let world = mappings_manager.get("ClientLevel").unwrap();
-        apply_object!(
-            world,
-            call_method_or_get_field!(env, minecraft_client, "level", false).unwrap().l().unwrap()
-        );
-
-        let game_time = call_method_or_get_field!(env, world, "getGameTime", false, &[]).unwrap().j().unwrap();
-
-        println!("game time: {game_time}");
     }
 
     fn on_load(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}

@@ -1,4 +1,4 @@
-use crate::client::mapping::CM;
+use crate::{client::mapping::CM, message_box};
 use jni::JNIEnv;
 use std::{collections::HashMap, rc::Rc};
 
@@ -66,11 +66,7 @@ impl<'j> MappingsManager<'j> {
 
             add_method!("getInstance", "I", "()Lefu;", true);
             add_method!("getTickDelta", "am", "()F", false);
-        });  // ported?
-        add_mapping!(new_self, "ClientLevel", "euv", {
-            add_field!("players", "H", "Ljava/util/List;", false);
-            add_method!("getGameTime", "U", "()J", false);  // `J` is long (i64)
-        });  // ported?
+        });
         add_mapping!(new_self, "PlayerEntity", "boj", {
             add_field!("currentScreenHandler", "bU", "Lbwm;", false);
 
@@ -93,7 +89,7 @@ impl<'j> MappingsManager<'j> {
         add_mapping!(new_self, "SlotActionType", "bwv", {
             add_field!("PICKUP", "a", "Lbwv;", true);
         });
-        add_mapping!(new_self, "Items", "caz", {
+        add_mapping!(new_self, "Items", "caz", {  // breaks
             add_field!("TOTEM_OF_UNDYING", "tn", "Lcat;", true);
         });
         add_mapping!(new_self, "ItemStack", "cax", {
@@ -115,6 +111,8 @@ impl<'j> MappingsManager<'j> {
         add_mapping!(new_self, "Hand", "awg", {
             add_field!("MAIN_HAND", "a", "Lbai;", true);
         });
+
+        message_box("after mappings");
 
         new_self
     }
