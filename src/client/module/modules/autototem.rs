@@ -37,11 +37,11 @@ impl BingusModule for AutoTotem {
             settings: Arc::new(Mutex::new(RefCell::new(vec![
                 Rc::new(RefCell::new(BingusSettings::RangeSetting(
                     RangeSetting::new(
-                        SettingValue::from([160.0, 240.0]),
-                        0.0..=240.0,
+                        SettingValue::from([50.0, 240.0]),
+                        0.0..=200.0,
                         Some(0),
                         Some(1.0),
-                        "delay (milliseconds)"
+                        "delay (10th of a second)",
                     ),
                 ))),
             ]))),
@@ -51,15 +51,18 @@ impl BingusModule for AutoTotem {
 
     fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
         if let Some(needing_swap_time) = self.needing_swap_time {
-            let now = SystemTime::now().duration_since(needing_swap_time).unwrap().as_millis();
+            let time_since_lost_totem = SystemTime::now().duration_since(needing_swap_time).unwrap().as_millis();
             let next_delay = {
                 let settings_mutex_guard = self.settings.lock().unwrap();
                 let settings = settings_mutex_guard.borrow();
                 let borrowed_settings = RefCell::borrow(settings);
                 let bingus_setting_ref = RefCell::borrow(borrowed_settings.get(0).unwrap());
                 let range_setting: RangeSetting = bingus_setting_ref.clone().try_into().unwrap();
-                range_setting.get_random_i64_in_range()
+                range_setting.get_random_i64_in_range() as u128
             };
+            if time_since_lost_totem >= next_delay {
+                self.needing_swap_time = None;
+            }
         }
 
 
@@ -124,6 +127,11 @@ impl BingusModule for AutoTotem {
         ).unwrap().i().unwrap() == totem_of_undying_id;
 
         if !offhand_is_totem {
+            if self.needing_swap_time.is_none() {
+                self.needing_swap_time = Some(SystemTime::now());
+                return;
+            }
+
             // todo add a check if a totem is even in the inventory with containsAny
             // find totem in inventory
             let mut found_totem_slot: Option<i32> = None;
