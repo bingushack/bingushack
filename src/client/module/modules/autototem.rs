@@ -224,7 +224,7 @@ impl BingusModule for AutoTotem {
 
     fn on_unload(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_enable(&mut self, env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn on_enable(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
     fn on_disable(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
