@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+use std::time::SystemTime;
 use super::{
     AllSettingsType, BingusModule, BingusSettings, BoxedBingusModule, SettingType,
     SettingValue,
@@ -22,6 +24,7 @@ pub struct AutoTotem {
     // todo make this enabled settings boilerplate shit a proc macro
     enabled: SettingType,
     settings: AllSettingsType,
+    needing_swap_time: Option<SystemTime>,
 }
 
 impl BingusModule for AutoTotem {
@@ -42,10 +45,24 @@ impl BingusModule for AutoTotem {
                     ),
                 ))),
             ]))),
+            needing_swap_time: None,
         })
     }
 
     fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
+        if let Some(needing_swap_time) = self.needing_swap_time {
+            let now = SystemTime::now().duration_since(needing_swap_time).unwrap().as_millis();
+            let next_delay = {
+                let settings_mutex_guard = self.settings.lock().unwrap();
+                let settings = settings_mutex_guard.borrow();
+                let borrowed_settings = RefCell::borrow(settings);
+                let bingus_setting_ref = RefCell::borrow(borrowed_settings.get(0).unwrap());
+                let range_setting: RangeSetting = bingus_setting_ref.clone().try_into().unwrap();
+                range_setting.get_random_i64_in_range()
+            };
+        }
+
+
         let minecraft_client = mappings_manager.get("MinecraftClient").unwrap();
         apply_object!(
             minecraft_client,
