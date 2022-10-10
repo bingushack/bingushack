@@ -7,7 +7,7 @@ use super::{
 use crate::client::setting::RangeSetting;
 use crate::{
     apply_object,
-    call_method_or_get_field,
+    call_method_or_get_field, message_box,
 };
 use crate::client::{mapping::MappingsManager, setting::BooleanSetting};
 use jni::{
@@ -24,7 +24,7 @@ pub struct AutoTotem {
     // todo make this enabled settings boilerplate shit a proc macro
     enabled: SettingType,
     settings: AllSettingsType,
-    needing_swap_time: Option<SystemTime>,
+    needing_swap_time: SystemTime,
 }
 
 impl BingusModule for AutoTotem {
@@ -45,27 +45,11 @@ impl BingusModule for AutoTotem {
                     ),
                 ))),
             ]))),
-            needing_swap_time: None,
+            needing_swap_time: SystemTime::now(),
         })
     }
 
     fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
-        if let Some(needing_swap_time) = self.needing_swap_time {
-            let time_since_lost_totem = SystemTime::now().duration_since(needing_swap_time).unwrap().as_millis();
-            let next_delay = {
-                let settings_mutex_guard = self.settings.lock().unwrap();
-                let settings = settings_mutex_guard.borrow();
-                let borrowed_settings = RefCell::borrow(settings);
-                let bingus_setting_ref = RefCell::borrow(borrowed_settings.get(0).unwrap());
-                let range_setting: RangeSetting = bingus_setting_ref.clone().try_into().unwrap();
-                range_setting.get_random_i64_in_range() as u128
-            };
-            if time_since_lost_totem >= next_delay * 100 {
-                self.needing_swap_time = None;
-            }
-        }
-
-
         let minecraft_client = mappings_manager.get("MinecraftClient").unwrap();
         apply_object!(
             minecraft_client,
@@ -127,9 +111,21 @@ impl BingusModule for AutoTotem {
         ).unwrap().i().unwrap() == totem_of_undying_id;
 
         if !offhand_is_totem {
-            if self.needing_swap_time.is_none() {
-                self.needing_swap_time = Some(SystemTime::now());
-                return;
+            {
+                let time_since_lost_totem = SystemTime::now().duration_since(self.needing_swap_time).unwrap().as_millis();
+                let next_delay = {
+                    let settings_mutex_guard = self.settings.lock().unwrap();
+                    let settings = settings_mutex_guard.borrow();
+                    let borrowed_settings = RefCell::borrow(settings);
+                    let bingus_setting_ref = RefCell::borrow(borrowed_settings.get(0).unwrap());
+                    let range_setting: RangeSetting = bingus_setting_ref.clone().try_into().unwrap();
+                    range_setting.get_random_i64_in_range() as u128
+                };
+                if time_since_lost_totem < next_delay {
+                    return;
+                } else {
+                    self.needing_swap_time = SystemTime::now();
+                }
             }
 
             // todo add a check if a totem is even in the inventory with containsAny
