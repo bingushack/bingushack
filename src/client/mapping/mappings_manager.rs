@@ -112,8 +112,6 @@ impl<'j> MappingsManager<'j> {
             add_field!("MAIN_HAND", "a", "Lbai;", true);
         });
 
-        message_box("after mappings");
-
         new_self
     }
 
