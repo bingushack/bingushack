@@ -11,7 +11,7 @@ use super::{
 use crate::client::setting::RangeSetting;
 use crate::{
     apply_object,
-    call_method_or_get_field, message_box,
+    call_method_or_get_field,
 };
 use crate::client::{mapping::MappingsManager, setting::BooleanSetting};
 use jni::{
@@ -140,7 +140,7 @@ impl BingusModule for AutoTotem {
             // only works in main inventory, not hotbar for some reason
             for i in 9..45 {
                 // potential optimizations GALORE
-                if {
+                let res = {
                     let i_item_stack = mappings_manager.get("ItemStack").unwrap();
                     // call getStack(i) on inventory then getItem on the result then getRawId on the result of that
                     apply_object!(
@@ -167,7 +167,7 @@ impl BingusModule for AutoTotem {
                         true,
                         &[JValue::from(i_item.get_object().unwrap())]
                     ).unwrap().i().unwrap() == totem_of_undying_id
-                } {
+                }; if res {
                     found_totem_slot = Some(i);
                     break;
                 }

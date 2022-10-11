@@ -1,4 +1,4 @@
-use crate::{client::mapping::CM, message_box};
+use crate::client::mapping::CM;
 use jni::JNIEnv;
 use std::{collections::HashMap, rc::Rc};
 

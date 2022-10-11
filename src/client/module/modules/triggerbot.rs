@@ -91,13 +91,11 @@ impl BingusModule for Triggerbot {
 
         // check if entity is alive
         // check if player is using an item
-        if {
-            !call_method_or_get_field!(env, target, "isAlive", false, &[]).unwrap().z().unwrap()
-            || call_method_or_get_field!(env, player, "isUsingItem", false, &[]).unwrap().z().unwrap()
-            || (call_method_or_get_field!(env, player, "getAttackCooldownProgress", false, &[
-                call_method_or_get_field!(env, minecraft_client, "getTickDelta", false, &[]).unwrap(),
-            ]).unwrap().f().unwrap() != 1.0 )
-        } {
+        if !call_method_or_get_field!(env, target, "isAlive", false, &[]).unwrap().z().unwrap()
+        || call_method_or_get_field!(env, player, "isUsingItem", false, &[]).unwrap().z().unwrap()
+        || (call_method_or_get_field!(env, player, "getAttackCooldownProgress", false, &[
+            call_method_or_get_field!(env, minecraft_client, "getTickDelta", false, &[]).unwrap(),
+        ]).unwrap().f().unwrap() != 1.0 ) {
             return;
         }
 
