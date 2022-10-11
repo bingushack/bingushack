@@ -6,7 +6,9 @@ use crate::client::BoxedBingusModule;
 use jni::JNIEnv;
 
 // todo make this all a nice big proc macro
+// atm it is a trait which each module implements
 pub trait BingusModule {
+    // where you add the fields to the struct including enabled or not and settings
     fn new_boxed() -> BoxedBingusModule
     where
         Self: Sized;
@@ -25,5 +27,6 @@ pub trait BingusModule {
 
     fn get_enabled_setting(&self) -> SettingType;
 
+    // the name that will be diplayed on the clickgui
     fn to_name(&self) -> String;
 }

@@ -1,3 +1,7 @@
+// only there on debug builds. doesn't really do anything atm
+
+
+
 use super::{
     AllSettingsType, BingusModule, BingusSettings, BoxedBingusModule, SettingType, SettingValue,
 };
