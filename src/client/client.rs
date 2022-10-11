@@ -11,7 +11,7 @@ pub type BoxedBingusModule = Box<dyn BingusModule>;
 pub struct Client {
     rx: Receiver<ClickGuiMessage>,
     #[allow(dead_code)]
-    tx: Sender<ClickGuiMessage>,
+    tx: Sender<ClickGuiMessage>,  // not used yet
 
     env: Rc<JNIEnv<'static>>,
     mappings_manager: Rc<MappingsManager<'static>>,
@@ -34,6 +34,7 @@ impl Client {
         }
     }
 
+    // called constantly
     pub fn client_tick(&mut self) {
         if let Ok(message) = self.rx.try_recv() {
             match message {
