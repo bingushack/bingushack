@@ -1,3 +1,5 @@
+// used for getting random values in a range. internally it uses floats but is able to be used with integers too
+
 use std::ops::RangeInclusive;
 use rand::Rng;
 
