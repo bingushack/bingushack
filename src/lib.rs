@@ -183,14 +183,20 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
         }
     }
 
+    // tell the clickgui_thread to kill itself
     tx.send(Message::KillThread).unwrap();
+    // wait for the clickgui_thread to exit
     let eject_code = clickgui_thread.join().unwrap();
+    // let the user know that the client is ejecting
     message_box("ejected");
+    // winapi method to exit dll's thread
+    // this will exit the function and the dll will be unloaded
     FreeLibraryAndExitThread(base as _, eject_code);
 
     unreachable!()
 }
 
+// magic C stuff
 #[no_mangle]
 pub extern "stdcall" fn DllMain(
     hinst_dll: HINSTANCE,
