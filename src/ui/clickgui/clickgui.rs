@@ -113,7 +113,7 @@ impl eframe::App for ClickGui {
                 }
             }
         });
-        self.client.lock().unwrap().client_tick();
+        self.client.lock().unwrap().client_tick();  // maybe make client_tick take a vec of things to tick instead of queuing messages?
         ctx.request_repaint();
     }
 }
