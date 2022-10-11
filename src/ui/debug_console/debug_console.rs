@@ -2,6 +2,7 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use eframe::egui;
 
+// mutable statics because i am lazy and it works
 static mut ENABLED: bool = false;
 
 pub fn init_debug_console() -> (DebugConsole, Sender<String>) {
@@ -18,7 +19,8 @@ pub fn run_debug_console(app: DebugConsole) {
         ENABLED = true;
     }
     let options = eframe::NativeOptions::default();
-    eframe::run_native("bingushack debug", options, Box::new(|_cc| Box::new(app)));
+    eframe::run_native("bingushack debug", options, Box::new(|_cc| Box::new(app)));  // will block on this until the window is closed
+    // now it is closed and ENABLED is false
     unsafe {
         ENABLED = false;
     }
@@ -43,12 +45,13 @@ impl DebugConsole {
 
 impl eframe::App for DebugConsole {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // at the moment this basically will just print out the text that is sent to it
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
             if let Ok(text) = self.rx.try_recv() {
                 self.text.insert(0, text);
             }
 
-            ui.hyperlink("http://bingushack.cc");
+            ui.hyperlink("http://bingushack.cc");  // product placement
 
             ui.separator();
 

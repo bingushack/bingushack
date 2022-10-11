@@ -1,9 +1,11 @@
+// widget for a module, containing other widgets
 use crate::client::{module::BingusModule, setting::*};
 use eframe::egui;
 use std::{cell::RefMut, rc::Rc};
 
 use super::{toggle, DoubleSlider};
 
+// lifetime fuckery because jni object lifetimes
 fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::Response {
     let desired_size = ui.spacing().interact_size.y * egui::vec2(5.0, 2.0);
 
@@ -23,11 +25,15 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Box<dyn BingusModule>) -> egui::
             ));
 
             ui.collapsing(module.to_name(), |ui| {
-                let settings_mutex = module.get_all_settings();
+                // this is the worst code ever in existence ever
+                // essentially uses interior mutability for getting modules owned by something else
+                // it needs to all be mutable because it is in an immediate-mode gui
+                let settings_mutex = module.get_all_settings();  // gets the mutex of the settings from the module. in a mutex because it is shared between threads
                 let mut to_unleak = settings_mutex.lock().unwrap();
-                let first_leaked = RefMut::leak(to_unleak.borrow_mut());
+                let first_leaked = RefMut::leak(to_unleak.borrow_mut());  // borrows the value mutably in the RefCell and leaks it to get it out of the RefMut
                 for setting in (*first_leaked).iter_mut() {
-                    let second_leaked = RefMut::leak((*setting).borrow_mut());
+                    let second_leaked = RefMut::leak((*setting).borrow_mut());  // gets the BingusSettings enum variant out of the RefCell
+                    // figures out what type of setting it is and draws the ui for it
                     match second_leaked {
                         BingusSettings::BooleanSetting(_) => {
                             ui.label(second_leaked.get_name());

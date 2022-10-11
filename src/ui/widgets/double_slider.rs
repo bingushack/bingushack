@@ -1,6 +1,7 @@
-#![allow(dead_code)]
+// basically skidded from the egui Slider type but with 2 sliders and logic to seperate them
 
-// mostly skidded from the egui Slider type
+
+#![allow(dead_code)]
 
 use eframe::{
     egui,

@@ -1,3 +1,4 @@
+// eframe widget to have a toggle switch
 use eframe::egui;
 
 fn toggle_ui(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
