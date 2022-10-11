@@ -11,6 +11,7 @@ pub struct MappingsManager<'a> {
 
 impl<'j> MappingsManager<'j> {
     pub fn new(jni_env: Rc<JNIEnv<'j>>) -> MappingsManager<'j> {
+        // macros to make stuff nice and easy(ish)
         macro_rules! adds {
             ($cm:ident) => {
                 #[allow(unused_macros)]
@@ -49,6 +50,7 @@ impl<'j> MappingsManager<'j> {
                 let mut cm = CM::default();
                 cm.apply_class(jni_env.find_class($class_path).unwrap());
 
+                // didn't feel like making a proc_macro so this instead, def inflates binary size but whatever
                 adds!(cm);
                 $fields_and_methods
 
@@ -59,6 +61,7 @@ impl<'j> MappingsManager<'j> {
         let mut new_self = MappingsManager::default();
 
         // add the mappings
+        // https://wagyourtail.xyz/Projects/MinecraftMappingViewer/App
         add_mapping!(new_self, "MinecraftClient", "efu", {
             add_field!("player", "t", "Leyw;", false);
             add_field!("level", "s", "Leuv;", false);
@@ -119,7 +122,7 @@ impl<'j> MappingsManager<'j> {
         unsafe {
             self.mappings
                 .get(&class_name.to_string())
-                .map(|r| std::mem::transmute::<&CM<'j>, &CM<'_>>(r))
+                .map(|r| std::mem::transmute::<&CM<'j>, &CM<'_>>(r))  // i don't know why this transmute is legal but it is so cope
         }
     }
 }

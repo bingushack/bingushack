@@ -1,3 +1,7 @@
+// macros to make things less painful to write
+
+
+// puts a jni JObject into a CM
 // `apply_object!(CM, JObject);`
 #[macro_export]
 macro_rules! apply_object {
@@ -6,6 +10,7 @@ macro_rules! apply_object {
     };
 }
 
+// does what it says on the tin pretty much. will panic if the field or method wasn't added to the CM
 // `let method_output: Result<JValue<'_>> = call_method_or_get_field!(..., &[]);`
 // `let field_output: Result<JValue<'_>> = call_method_or_get_field!(...);`
 #[macro_export]

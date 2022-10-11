@@ -7,6 +7,8 @@ use jni::objects::{JClass, JObject};
 
 use std::{cell::RefCell, collections::HashMap};
 
+
+// each of these are mappings for a class (ClassMapping)
 #[derive(Clone, Debug)]
 pub struct CM<'j> {
     class: RefCell<Option<JClass<'j>>>,
@@ -85,12 +87,16 @@ impl<'j> CM<'j> {
     }
 }
 
+// get rid of this lol
 pub trait MemTrait {
     fn get_name(&self) -> String;
 
     fn get_sig(&self) -> String;
 }
 
+
+// i no longer remember why it is called Mem
+// contains the name and signature of a method or field
 #[derive(Clone, Debug)]
 pub struct Mem {
     name: String,
