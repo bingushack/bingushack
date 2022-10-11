@@ -36,6 +36,7 @@ use winapi::{
 
 #[cfg(target_os = "windows")]
 
+// utility method for showing a small window, for debugging
 pub fn message_box(text: &str) {
     let caption = CString::new("bingushack").unwrap();
     let text = CString::new(text).unwrap();
@@ -63,6 +64,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
         panic!();
     }
 
+    // show a message box if the client got injected
     message_box("injected");
 
     // channel to send and recieve messages involving the thread for the guis
@@ -78,16 +80,17 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
             (Arc::new(Mutex::new(tx)), Arc::new(Mutex::new(rx)))
         };
 
-        // todo: make so that if you spawn multiple debug consoles, they all receive the same messages
         let mut debug_console_sender: Option<Sender<String>> = None;
         let mut debug_console;
         loop {
             match rx.recv() {
                 Ok(message) => match message {
                     Message::SpawnDebugConsole => {
+                        // get the debug console object and a sender to it
                         let tmp = init_debug_console();
                         debug_console = tmp.0;
                         debug_console_sender = Some(tmp.1);
+                        // spawn the debug console thread and run the debug console
                         std::thread::spawn(|| {
                             run_debug_console(debug_console);
                         });
@@ -99,52 +102,67 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                             sender.send(String::from("spawn gui")).unwrap();
                         }
 
+                        // spawn a thread for the clickgui
                         std::thread::spawn(|| {
+                            // get a jni object of the java vm
                             let jvm: JavaVM = {
+                                // ffi'd method of getting already-created jvms.
                                 use jni::sys::JNI_GetCreatedJavaVMs;
+                                // this is because the "normal" jni library in rust does not easily allow you to get jvms that you did not launch
 
+                                // empty buffer
                                 let jvm_ptr = Vec::with_capacity(1).as_mut_ptr();
+                                // pass the buffer, the amount of jvms to get, and a buffer for the amount of jvms gotten
+                                // the amount of jvms gotten is a null pointer because we don't care about it
                                 JNI_GetCreatedJavaVMs(jvm_ptr, 1, null_mut());
 
+                                // get a nice jvm object from the raw pointer
                                 JavaVM::from_raw(*jvm_ptr).unwrap()
                             };
 
+                            // get the jni environment as a daemon thread
                             let jni_env: JNIEnv<'_> =
                                 jvm.attach_current_thread_as_daemon().unwrap();
 
                             // i've always wanted to do this
                             let jni_env: JNIEnv<'static> =
                                 std::mem::transmute::<JNIEnv<'_>, JNIEnv<'static>>(jni_env);
+                            // transmute the jni environment to a static lifetime to make it easier to use also it's a daemon thread
 
+                            // get the clickgui
+                            // don't care about the sender it returns yet
                             let client = init_clickgui(jni_env).0;
                             run_clickgui(client);
                         });
                     }
-                    Message::KillThread => break,
+                    Message::KillThread => break,  // exit the loop and start the process of ejection
                 },
                 Err(_) => {}
             };
         }
-        0
+        0  // return 0 as an exit code for the dll
     });
 
     // this is ugly
     let mut hwnd: winapi::shared::windef::HWND;
     {
         let window_name = CString::new("Minecraft 1.19.2").unwrap();
-        hwnd = FindWindowA(null_mut(), window_name.as_ptr());
+        hwnd = FindWindowA(null_mut(), window_name.as_ptr());  // make put this
         let window_name =
             CString::new("Minecraft 1.19.2 - Multiplayer (3rd-party Server)").unwrap();
         if hwnd == null_mut() {
+            // here?
             hwnd = FindWindowA(null_mut(), window_name.as_ptr());
         }
-        let window_name = CString::new("Minecraft 1.19.2 - Singleplayer").unwrap();
+        let window_name = CString::new("Minecraft 1.19.2 - Singleplayer").unwrap();  // and this
         if hwnd == null_mut() {
+            // here?
             hwnd = FindWindowA(null_mut(), window_name.as_ptr());
         }
     }
 
     loop {
+        // if the window is not the foreground window, give the cpu a bit of a break
         if hwnd != GetForegroundWindow() {
             sleep(Duration::from_millis(50));
             continue;
@@ -152,6 +170,8 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
         // todo: invalidate these if the clickgui has panicked
         // todo: might be able to get rid of these senders and just spawn the thread directly here. maybe
+        //
+        // send a message to the clickgui_thread thread to spawn a window or kill the thread
         if GetAsyncKeyState(VK_LEFT) & 0x01 == 1 {
             tx.send(Message::SpawnDebugConsole).unwrap();
         }
