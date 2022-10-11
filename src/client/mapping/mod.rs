@@ -87,14 +87,6 @@ impl<'j> CM<'j> {
     }
 }
 
-// get rid of this lol
-pub trait MemTrait {
-    fn get_name(&self) -> String;
-
-    fn get_sig(&self) -> String;
-}
-
-
 // i no longer remember why it is called Mem
 // contains the name and signature of a method or field
 #[derive(Clone, Debug)]
