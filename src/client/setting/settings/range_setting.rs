@@ -35,6 +35,7 @@ impl RangeSetting {
         &mut self.value
     }
 
+    #[allow(dead_code)]
     pub fn get_random_f64_in_range(&self) -> f64 {
         let mut rng = rand::thread_rng();
         rng.gen_range(self.value[0]..=self.value[1])
