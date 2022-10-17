@@ -13,6 +13,10 @@ glutin = "0.28.0"
 obfstr = "0.4.1"
 uniqueid = "0.2.6"
 rand = "0.8.5"
+crochet = "0.1"
+gl = "0.14.0"
+widestring = "1.0.2"
+glu-sys = "0.1.4"
 
 [lib]
 crate-type = ["dylib"]

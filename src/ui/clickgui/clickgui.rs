@@ -1,4 +1,4 @@
-use super::clickgui_message::ClickGuiMessage;
+use super::{clickgui_message::{ClickGuiMessage, self}};
 use crate::{
     client::{
         module::{modules::*, BingusModule},
@@ -10,7 +10,7 @@ use jni::JNIEnv;
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::Mutex,
+    sync::{Mutex, Exclusive},
     sync::mpsc::{Receiver, Sender},
 };
 
@@ -19,9 +19,9 @@ use eframe::egui;
 // mutable statics because i am lazy and it works
 static mut ENABLED: bool = false;
 
-pub fn init_clickgui(jni_env: JNIEnv<'static>) -> (ClickGui, Sender<ClickGuiMessage>) {
+pub fn init_clickgui(jni_env: JNIEnv<'static>) -> (ClickGui, Mutex<Exclusive<Sender<ClickGuiMessage>>>) {
     let (ntx, nrx) = std::sync::mpsc::channel();
-    (ClickGui::new(jni_env, nrx), ntx)
+    (ClickGui::new(jni_env, nrx), Mutex::new(Exclusive::new(ntx)))
 }
 
 pub fn run_clickgui(app: ClickGui) {
@@ -41,7 +41,6 @@ pub fn run_clickgui(app: ClickGui) {
 }
 
 pub struct ClickGui {
-    #[allow(dead_code)]
     rx: Receiver<ClickGuiMessage>,
 
     // sender to the client itself
@@ -82,7 +81,8 @@ impl ClickGui {
                 // add all non-debug modules
                 modules = modules_maker![
                     AutoTotem::new_boxed(),
-                    Triggerbot::new_boxed()
+                    Triggerbot::new_boxed(),
+                    Esp::new_boxed()
                 ];
 
                 // if in debug add debug modules
@@ -105,6 +105,10 @@ impl eframe::App for ClickGui {
                 ui.push_id(i, |ui| {
                     ui.add(module_widget(&module.borrow()));
                 });
+
+                if let Ok(clickgui_message) = self.rx.try_recv() {
+                    self.client_sender.send(clickgui_message).unwrap();
+                }
 
                 // if module is enabled, send a message to the Client to tick the module pointed to by the message
                 if module

@@ -42,7 +42,10 @@ impl Client {
                     module
                         .borrow_mut()
                         .tick(self.env.clone(), self.mappings_manager.clone());
-                }
+                },
+                ClickGuiMessage::RunRenderEvent(module) => {
+                    module.borrow().render_event();
+                },
             }
         }
     }

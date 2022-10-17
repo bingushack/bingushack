@@ -15,6 +15,8 @@ pub trait BingusModule {
 
     fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>);
 
+    fn render_event(&self);
+
     fn on_load(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>);
 
     fn on_unload(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>);

@@ -1,4 +1,4 @@
-#![feature(cell_leak)]
+#![feature(cell_leak, exclusive_wrapper)]
 
 mod client;
 mod ui;
@@ -8,23 +8,24 @@ use crate::ui::{
     debug_console::{init_debug_console, run_debug_console},
 };
 use jni::{JNIEnv, JavaVM};
+use widestring::WideCString;
 use std::{
     ffi::CString,
     sync::{
         mpsc,
         mpsc::{Receiver, Sender},
-        Arc, Mutex,
+        Arc, Mutex, Exclusive,
     },
     thread::sleep,
     time::Duration,
 };
-use ui::message::Message;
+use ui::{message::Message};
 use winapi::{
     _core::ptr::null_mut,
-    shared::minwindef::{DWORD, HINSTANCE, LPVOID},
+    shared::{minwindef::{DWORD, HINSTANCE, LPVOID, HMODULE, UINT}, windef::{HWND, HDC}, ntdef::LPCWSTR},
     um::{
         handleapi::CloseHandle,
-        libloaderapi::FreeLibraryAndExitThread,
+        libloaderapi::{FreeLibraryAndExitThread, GetProcAddress, GetModuleHandleW},
         processthreadsapi::CreateThread,
         winnt::DLL_PROCESS_ATTACH,
         winuser::{
@@ -35,6 +36,12 @@ use winapi::{
 };
 
 #[cfg(target_os = "windows")]
+
+
+
+pub static mut STATIC_HDC: Exclusive<HDC> = Exclusive::new(null_mut());
+
+
 
 // utility method for showing a small window, for debugging
 pub fn message_box(text: &str) {
@@ -130,12 +137,16 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                             // transmute the jni environment to a static lifetime to make it easier to use also it's a daemon thread
 
                             // get the clickgui
-                            // don't care about the sender it returns yet
-                            let client = init_clickgui(jni_env).0;
+                            let tmp = init_clickgui(jni_env);
+                            // the sender is not used yet
+                            let client = tmp.0;
                             run_clickgui(client);
                         });
                     }
                     Message::KillThread => break,  // exit the loop and start the process of ejection
+                    Message::RenderEvent => {
+
+                    }
                 },
                 Err(_) => {}
             };
@@ -205,6 +216,28 @@ pub extern "stdcall" fn DllMain(
 ) -> i32 {
     match fdw_reason {
         DLL_PROCESS_ATTACH => {
+            // initialize all the opengl stuff
+            {
+                let opengl32_module: HMODULE;
+                let opengl32_str = WideCString::from_str("opengl32.dll").unwrap();
+
+                unsafe {
+                    opengl32_module = GetModuleHandleW(opengl32_str.as_ptr());
+                }
+                if opengl32_module == null_mut() {
+                    message_box("opengl32.dll not found. what the fuck did you do??");
+                    return 0;
+                }
+
+                gl::load_with(|s| unsafe {
+                    let gl_fn_cstr = CString::new(s).unwrap();
+                    GetProcAddress(opengl32_module, gl_fn_cstr.as_ptr())
+                } as *const _);
+            }
+
+            // enable hooks
+            crochet::enable!(swapbuffers_hook).expect("could not enable hook");
+
             unsafe {
                 let bingus_thread = CreateThread(
                     null_mut(),
@@ -218,6 +251,21 @@ pub extern "stdcall" fn DllMain(
             }
             true as i32
         }
+        DLL_PROCESS_DETACH => {
+            // disable hooks
+            crochet::disable!(swapbuffers_hook).expect("could not disable hook");
+
+            true as i32
+        }
         _ => true as i32, // it went a-ok because we dont know what happened so lol fuck off
     }
+}
+
+#[crochet::hook("opengl32.dll", "wglSwapBuffers")]
+fn swapbuffers_hook(unnamed_param: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
+    //message_box("hooked swapbuffers hook");
+
+
+
+    call_original!(unnamed_param)
 }
