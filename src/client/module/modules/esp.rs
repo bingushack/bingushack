@@ -93,14 +93,14 @@ fn esp(hdc: HDC, _alpha: GLfloat) {
     */
 }
 
-fn draw_triangle(W: i32, H: i32) {
+fn draw_triangle(w: i32, h: i32) {
     use glu_sys::*;
     unsafe {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        glViewport(0, 0, W, H);
-        gluPerspective(45.0, (W as f32 / H as f32).into(), 1.0, 10.0);
+        glViewport(0, 0, w, h);
+        gluPerspective(45.0, (w as f32 / h as f32).into(), 1.0, 10.0);
         glTranslatef(0.0, 0.0, -5.0);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();

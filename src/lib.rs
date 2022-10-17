@@ -22,12 +22,12 @@ use std::{
 use ui::{message::Message};
 use winapi::{
     _core::ptr::null_mut,
-    shared::{minwindef::{DWORD, HINSTANCE, LPVOID, HMODULE}, windef::{HDC}},
+    shared::{minwindef::{DWORD, HINSTANCE, LPVOID, HMODULE}, windef::HDC},
     um::{
         handleapi::CloseHandle,
         libloaderapi::{FreeLibraryAndExitThread, GetProcAddress, GetModuleHandleW},
         processthreadsapi::CreateThread,
-        winnt::DLL_PROCESS_ATTACH,
+        winnt::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH},
         winuser::{
             FindWindowA, GetAsyncKeyState, GetForegroundWindow, MessageBoxA, MB_OK, VK_DOWN,
             VK_LEFT, VK_RIGHT,
@@ -251,7 +251,7 @@ pub extern "stdcall" fn DllMain(
             }
             true as i32
         }
-        _DLL_PROCESS_DETACH => {
+        DLL_PROCESS_DETACH => {
             // disable hooks
             crochet::disable!(swapbuffers_hook).expect("could not disable hook");
 
