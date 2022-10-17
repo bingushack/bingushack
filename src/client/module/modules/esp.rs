@@ -5,9 +5,9 @@ use crate::{client::{
     mapping::MappingsManager,
     setting::{BooleanSetting, FloatSetting},
 }, STATIC_HDC};
-use gl::{types::GLfloat, Viewport};
+use gl::{types::GLfloat};
 use jni::JNIEnv;
-use winapi::{shared::windef::{HDC__, RECT, HDC}, um::winuser::{GetClientRect, WindowFromDC}};
+use winapi::{shared::windef::{RECT, HDC}, um::winuser::{GetClientRect, WindowFromDC}};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -35,7 +35,7 @@ impl BingusModule for Esp {
         })
     }
 
-    fn tick(&mut self, env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn tick(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
     fn render_event(&self) {
         // if enabled

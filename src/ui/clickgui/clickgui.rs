@@ -1,4 +1,4 @@
-use super::{clickgui_message::{ClickGuiMessage, self}};
+use super::{clickgui_message::{ClickGuiMessage}};
 use crate::{
     client::{
         module::{modules::*, BingusModule},

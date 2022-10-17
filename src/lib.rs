@@ -22,7 +22,7 @@ use std::{
 use ui::{message::Message};
 use winapi::{
     _core::ptr::null_mut,
-    shared::{minwindef::{DWORD, HINSTANCE, LPVOID, HMODULE, UINT}, windef::{HWND, HDC}, ntdef::LPCWSTR},
+    shared::{minwindef::{DWORD, HINSTANCE, LPVOID, HMODULE}, windef::{HDC}},
     um::{
         handleapi::CloseHandle,
         libloaderapi::{FreeLibraryAndExitThread, GetProcAddress, GetModuleHandleW},
@@ -251,7 +251,7 @@ pub extern "stdcall" fn DllMain(
             }
             true as i32
         }
-        DLL_PROCESS_DETACH => {
+        _DLL_PROCESS_DETACH => {
             // disable hooks
             crochet::disable!(swapbuffers_hook).expect("could not disable hook");
 
