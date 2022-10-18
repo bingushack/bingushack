@@ -19,9 +19,9 @@ use eframe::egui;
 // mutable statics because i am lazy and it works
 static mut ENABLED: bool = false;
 
-pub fn init_clickgui(jni_env: JNIEnv<'static>) -> (ClickGui, Mutex<Exclusive<Sender<ClickGuiMessage>>>) {
+pub fn init_clickgui(jni_env: JNIEnv<'static>) -> (ClickGui, Sender<ClickGuiMessage>) {
     let (ntx, nrx) = std::sync::mpsc::channel();
-    (ClickGui::new(jni_env, nrx), Mutex::new(Exclusive::new(ntx)))
+    (ClickGui::new(jni_env, nrx), ntx)
 }
 
 pub fn run_clickgui(app: ClickGui) {
@@ -106,8 +106,15 @@ impl eframe::App for ClickGui {
                     ui.add(module_widget(&module.borrow()));
                 });
 
+                // shit code idc
                 if let Ok(clickgui_message) = self.rx.try_recv() {
-                    self.client_sender.send(clickgui_message).unwrap();
+                    match clickgui_message {
+                        ClickGuiMessage::RunRenderEvent => {
+                            // run the render event
+                            module.borrow().render_event();
+                        },
+                        _ => {}
+                    }
                 }
 
                 // if module is enabled, send a message to the Client to tick the module pointed to by the message

@@ -19,7 +19,7 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use ui::{message::Message};
+use ui::{message::Message, clickgui::ClickGui};
 use winapi::{
     _core::ptr::null_mut,
     shared::{minwindef::{DWORD, HINSTANCE, LPVOID, HMODULE}, windef::HDC},
@@ -40,6 +40,8 @@ use winapi::{
 
 
 pub static mut STATIC_HDC: Exclusive<HDC> = Exclusive::new(null_mut());
+static mut CLICKGUI_SENDER: Mutex<Option<Sender<ClickGuiMessage>>> = Mutex::new(None);
+static mut TX: Mutex<Option<Sender<Message>>> = Mutex::new(None);
 
 
 
@@ -76,6 +78,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
     // channel to send and recieve messages involving the thread for the guis
     let (tx, rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
+    *TX.lock().unwrap() = Some(tx.clone());
     let clickgui_thread = std::thread::spawn(move || {
         // after clickgui is enabled, you can use tx_clickgui to send messages to the clickgui
         // and rx_clickgui to receive messages from the clickgui
@@ -138,14 +141,18 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
                             // get the clickgui
                             let tmp = init_clickgui(jni_env);
-                            // the sender is not used yet
-                            let client = tmp.0;
-                            run_clickgui(client);
+                            CLICKGUI_SENDER = Mutex::new(Some(tmp.1));
+                            run_clickgui(tmp.0);
                         });
                     }
                     Message::KillThread => break,  // exit the loop and start the process of ejection
                     Message::RenderEvent => {
-
+                        let mut clickgui_sender = CLICKGUI_SENDER.lock().unwrap();
+                        if clickgui_sender.is_some() {
+                            let tmp = clickgui_sender.take().unwrap();
+                            tmp.send(ClickGuiMessage::RunRenderEvent).unwrap();
+                            CLICKGUI_SENDER = Mutex::new(Some(tmp));  // bad bad bad bad
+                        }
                     }
                 },
                 Err(_) => {}
@@ -265,7 +272,12 @@ pub extern "stdcall" fn DllMain(
 fn swapbuffers_hook(unnamed_param: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
     //message_box("hooked swapbuffers hook");
 
-
+    // send a message to the clickgui_thread to run the render event
+    unsafe {
+        if let Some(tx) = &*TX.lock().unwrap() {
+            tx.send(Message::RenderEvent).unwrap();
+        }
+    }
 
     call_original!(unnamed_param)
 }
