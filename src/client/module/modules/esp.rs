@@ -4,7 +4,7 @@ use super::{
 use crate::{client::{
     mapping::MappingsManager,
     setting::{BooleanSetting, FloatSetting},
-}, STATIC_HDC};
+}, STATIC_HDC, log_to_file};
 use gl::{types::GLfloat};
 use jni::JNIEnv;
 use winapi::{shared::windef::{RECT, HDC}, um::winuser::{GetClientRect, WindowFromDC}};
@@ -38,20 +38,20 @@ impl BingusModule for Esp {
     fn tick(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
     fn render_event(&self) {
+        /*
+        log_to_file("called render_event");
         // if enabled
-        if self
-            .get_enabled_setting()
-            .lock()
-            .unwrap()
-            .borrow()
-            .get_value()
-            .try_into()
-            .unwrap()
+        if self.get_enabled()
         {
+            log_to_file("render event start");
             unsafe {
-                esp(*STATIC_HDC.get_mut(), 1.0)
+                esp(*STATIC_HDC.lock().unwrap(), 1.0)
             }
+            log_to_file("render event end");
+        } else {
+            log_to_file("render event not enabled");
         }
+        */
     }
 
     fn on_load(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
@@ -76,15 +76,17 @@ impl BingusModule for Esp {
 }
 
 fn esp(hdc: HDC, _alpha: GLfloat) {
+    log_to_file("a");
     let rc_cli: *mut RECT = null_mut();
     unsafe {
         GetClientRect(WindowFromDC(hdc), rc_cli);
     }
+    log_to_file("b");
     let rc_cli = unsafe { *rc_cli };
-
+    log_to_file("c");
     let width = rc_cli.right - rc_cli.left;
     let height = rc_cli.bottom - rc_cli.top;
-
+    log_to_file("d");
     draw_triangle(width, height);
     /*
     unsafe {
@@ -94,42 +96,9 @@ fn esp(hdc: HDC, _alpha: GLfloat) {
 }
 
 fn draw_triangle(w: i32, h: i32) {
-    use glu_sys::*;
+    log_to_file("e");
     unsafe {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glViewport(0, 0, w, h);
-        gluPerspective(45.0, (w as f32 / h as f32).into(), 1.0, 10.0);
-        glTranslatef(0.0, 0.0, -5.0);
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glRotatef(0.0, 1.0, 1.0, 0.0);
-        glColor3f(1.0, 0.0, 0.0);
-        glBegin(GL_POLYGON);
-        glVertex3f(0.0, 1.0, 0.0);
-        glVertex3f(1.0, -1.0, 1.0);
-        glVertex3f(-1.0, -1.0, 1.0);
-        glEnd();
-        glColor3f(0.0, 1.0, 0.0);
-        glBegin(GL_POLYGON);
-        glVertex3f(0.0, 1.0, 0.0);
-        glVertex3f(0.0, -1.0, -1.0);
-        glVertex3f(1.0, -1.0, 1.0);
-        glEnd();
-        glColor3f(0.0, 0.0, 1.0);
-        glBegin(GL_POLYGON);
-        glVertex3f(0.0, 1.0, 0.0);
-        glVertex3f(-1.0, -1.0, 1.0);
-        glVertex3f(0.0, -1.0, -1.0);
-        glEnd();
-        glColor3f(1.0, 0.0, 0.0);
-        glBegin(GL_POLYGON);
-        glVertex3f(1.0, -1.0, 1.0);
-        glVertex3f(0.0, -1.0, -1.0);
-        glVertex3f(-1.0, -1.0, 1.0);
-        glEnd();
-        glLoadIdentity();
-        glRasterPos2f(-3.0, -2.0);
+        
     }
+    log_to_file("f");
 }

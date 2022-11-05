@@ -4,13 +4,13 @@ use crate::{
         module::{modules::*, BingusModule},
         BoxedBingusModule, Client,
     },
-    ui::widgets::module_widget,
+    ui::widgets::module_widget, log_to_file,
 };
 use jni::JNIEnv;
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::{Mutex, Exclusive},
+    sync::Mutex,
     sync::mpsc::{Receiver, Sender},
 };
 
@@ -108,25 +108,21 @@ impl eframe::App for ClickGui {
 
                 // shit code idc
                 if let Ok(clickgui_message) = self.rx.try_recv() {
+                    log_to_file("got render message");
                     match clickgui_message {
                         ClickGuiMessage::RunRenderEvent => {
+                            log_to_file("made sure it was a render message");
                             // run the render event
                             module.borrow().render_event();
+                            log_to_file("ran render event");
                         },
                         _ => {}
                     }
                 }
 
                 // if module is enabled, send a message to the Client to tick the module pointed to by the message
-                if module
-                    .borrow()
-                    .get_enabled_setting()
-                    .lock()
-                    .unwrap()
-                    .borrow()
-                    .get_value()
-                    .try_into()
-                    .unwrap()
+                let module_enabled = module.borrow().get_enabled();
+                if module_enabled
                 {
                     self.client_sender
                         .send(ClickGuiMessage::RunModule(Rc::clone(module)))

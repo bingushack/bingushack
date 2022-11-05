@@ -29,6 +29,17 @@ pub trait BingusModule {
 
     fn get_enabled_setting(&self) -> SettingType;
 
+    fn get_enabled(&self) -> bool {
+        self
+            .get_enabled_setting()
+            .lock()
+            .unwrap()
+            .borrow()
+            .get_value()
+            .try_into()
+            .unwrap()
+    }
+
     // the name that will be diplayed on the clickgui
     fn to_name(&self) -> String;
 }
