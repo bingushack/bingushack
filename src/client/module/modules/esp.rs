@@ -4,7 +4,7 @@ use super::{
 use crate::{client::{
     mapping::MappingsManager,
     setting::{BooleanSetting, FloatSetting},
-}, log_to_file};
+}};
 use gl::{types::GLfloat};
 use jni::JNIEnv;
 use winapi::{shared::windef::{RECT, HDC}, um::winuser::{GetClientRect, WindowFromDC}};
@@ -76,17 +76,13 @@ impl BingusModule for Esp {
 }
 
 fn esp(hdc: HDC, _alpha: GLfloat) {
-    log_to_file("a");
     let rc_cli: *mut RECT = null_mut();
     unsafe {
         GetClientRect(WindowFromDC(hdc), rc_cli);
     }
-    log_to_file("b");
     let rc_cli = unsafe { *rc_cli };
-    log_to_file("c");
     let width = rc_cli.right - rc_cli.left;
     let height = rc_cli.bottom - rc_cli.top;
-    log_to_file("d");
     draw_triangle(width, height);
     /*
     unsafe {
@@ -96,9 +92,7 @@ fn esp(hdc: HDC, _alpha: GLfloat) {
 }
 
 fn draw_triangle(_w: i32, _h: i32) {
-    log_to_file("e");
     unsafe {
         
     }
-    log_to_file("f");
 }

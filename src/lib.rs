@@ -167,15 +167,11 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                     }
                     Message::KillThread => break,  // exit the loop and start the process of ejection
                     Message::RenderEvent => {
-                        log_to_file("got hooked send");
                         let mut clickgui_sender = CLICKGUI_SENDER.lock().unwrap();
-                        log_to_file("got clickgui");
                         if clickgui_sender.is_some() {
-                            log_to_file("0");
                             let tmp = clickgui_sender.take().unwrap();
                             tmp.send(ClickGuiMessage::RunRenderEvent).unwrap();
                             CLICKGUI_SENDER = Mutex::new(Some(tmp));  // bad bad bad bad
-                            log_to_file("1");
                         }
                     }
                 },
@@ -276,7 +272,6 @@ pub extern "stdcall" fn DllMain(
 
 #[crochet::hook("opengl32.dll", "wglSwapBuffers")]
 fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
-    log_to_file("start of hook");
     let is_ready = WAITING_CELL.get_or_init(|| {
         // initialize all the opengl stuff
         {
@@ -318,7 +313,6 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
             wglMakeCurrent(hdc, *local_new_context.get_mut());
         }
         render_event(hdc);
-        log_to_file("called render_event");
     }
 
 
@@ -335,7 +329,6 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
         let local_old_context = OLD_CONTEXT.get_mut().unwrap();
         wglMakeCurrent(hdc, *local_old_context.get_mut());
     }
-    log_to_file("calling original");
     call_original!(hdc)
 }
 
@@ -355,12 +348,9 @@ fn esp(hdc: HDC, _alpha: gl::types::GLfloat) {
     unsafe {
         GetClientRect(WindowFromDC(hdc), rc_cli);
     }
-    log_to_file("b");
     let rc_cli = unsafe { *rc_cli };  // crash
-    log_to_file("c");
     let width = rc_cli.right - rc_cli.left;
     let height = rc_cli.bottom - rc_cli.top;
-    log_to_file("d");
     */
     draw_triangle(hdc, 400, 400);
     /*

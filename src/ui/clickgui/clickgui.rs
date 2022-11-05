@@ -4,7 +4,7 @@ use crate::{
         module::{modules::*, BingusModule},
         BoxedBingusModule, Client,
     },
-    ui::widgets::module_widget, log_to_file,
+    ui::widgets::module_widget,
 };
 use jni::JNIEnv;
 use std::{
@@ -108,13 +108,10 @@ impl eframe::App for ClickGui {
 
                 // shit code idc
                 if let Ok(clickgui_message) = self.rx.try_recv() {
-                    log_to_file("got render message");
                     match clickgui_message {
                         ClickGuiMessage::RunRenderEvent => {
-                            log_to_file("made sure it was a render message");
                             // run the render event
                             module.borrow().render_event();
-                            log_to_file("ran render event");
                         },
                         _ => {}
                     }
