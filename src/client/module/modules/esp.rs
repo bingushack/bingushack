@@ -5,13 +5,13 @@ use crate::{client::{
     mapping::MappingsManager,
     setting::{BooleanSetting, FloatSetting},
 }, NEW_CONTEXT, STATIC_HDC};
-use gl::{types::GLfloat};
+
 use jni::JNIEnv;
-use winapi::{shared::windef::{RECT, HDC}, um::{winuser::{GetClientRect, WindowFromDC}, wingdi::{wglGetCurrentContext, wglMakeCurrent}}};
+use winapi::{shared::windef::{HDC}, um::{wingdi::{wglGetCurrentContext, wglMakeCurrent}}};
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::{Arc, Mutex}, ptr::null_mut, ffi::CString,
+    sync::{Arc, Mutex}, ffi::CString,
 };
 
 pub struct Esp {
@@ -211,10 +211,12 @@ void main() {
 
         // Use shader program
         gl::UseProgram(program);
-        gl::BindFragDataLocation(program, 0, CString::new("out_color").unwrap().as_ptr());
+        let out_color_str = CString::new("out_color").unwrap();
+        gl::BindFragDataLocation(program, 0, out_color_str.as_ptr());
         
         // Specify the layout of the vertex data
-        let pos_attr = gl::GetAttribLocation(program, CString::new("position").unwrap().as_ptr());
+        let pos_str = CString::new("position").unwrap();
+        let pos_attr = gl::GetAttribLocation(program, pos_str.as_ptr());
         gl::EnableVertexAttribArray(pos_attr as GLuint);
         gl::VertexAttribPointer(
             pos_attr as GLuint,

@@ -295,7 +295,7 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
 
             gl::load_with(|s| unsafe {
                 let gl_fn_cstr = CString::new(s).unwrap();
-                let gl_fn_cstr_ptr = gl_fn_cstr.as_ptr();
+                let gl_fn_cstr_ptr = gl_fn_cstr.as_ptr();  // this is unneeded
                 let check = wglGetProcAddress(gl_fn_cstr_ptr);
                 if check == null_mut() {
                     GetProcAddress(opengl32_module, gl_fn_cstr_ptr)
@@ -324,8 +324,4 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
     }
     call_original!(hdc)
 }
-
-
-
-
 
