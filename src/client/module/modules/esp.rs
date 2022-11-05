@@ -4,7 +4,7 @@ use super::{
 use crate::{client::{
     mapping::MappingsManager,
     setting::{BooleanSetting, FloatSetting},
-}, STATIC_HDC, log_to_file};
+}, log_to_file};
 use gl::{types::GLfloat};
 use jni::JNIEnv;
 use winapi::{shared::windef::{RECT, HDC}, um::winuser::{GetClientRect, WindowFromDC}};
@@ -95,7 +95,7 @@ fn esp(hdc: HDC, _alpha: GLfloat) {
     */
 }
 
-fn draw_triangle(w: i32, h: i32) {
+fn draw_triangle(_w: i32, _h: i32) {
     log_to_file("e");
     unsafe {
         

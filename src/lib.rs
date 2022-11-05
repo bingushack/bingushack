@@ -7,7 +7,7 @@ use crate::ui::{
     clickgui::{init_clickgui, run_clickgui, ClickGuiMessage},
     debug_console::{init_debug_console, run_debug_console},
 };
-use glutin::platform::windows::HGLRC;
+
 use jni::{JNIEnv, JavaVM};
 use widestring::WideCString;
 use std::{
@@ -20,7 +20,7 @@ use std::{
     thread::sleep,
     time::{Duration, SystemTime},
 };
-use ui::{message::Message, clickgui::ClickGui};
+use ui::{message::Message};
 use winapi::{
     _core::ptr::null_mut,
     shared::{minwindef::{DWORD, HINSTANCE, LPVOID, HMODULE}, windef::{HDC, HGLRC__}},
@@ -31,8 +31,8 @@ use winapi::{
         winnt::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH},
         winuser::{
             FindWindowA, GetAsyncKeyState, GetForegroundWindow, MessageBoxA, MB_OK, VK_DOWN,
-            VK_LEFT, VK_RIGHT, WindowFromDC, GetClientRect,
-        }, wingdi::{wglGetProcAddress, SwapBuffers, wglMakeCurrent, wglGetCurrentContext, wglCreateContext, wglDeleteContext},
+            VK_LEFT, VK_RIGHT,
+        }, wingdi::{wglGetProcAddress, wglMakeCurrent, wglGetCurrentContext, wglCreateContext},
     },
 };
 use once_cell::sync::OnceCell;
@@ -326,7 +326,7 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
     // send a message to the clickgui_thread to run the render event
     unsafe {
         //*STATIC_HDC.get_mut().unwrap() = hdc;
-        if let Some(tx) = &*TX.lock().unwrap() {
+        if let Some(_tx) = &*TX.lock().unwrap() {
             // tx.send(Message::RenderEvent).unwrap();
         }
     }
@@ -370,7 +370,7 @@ fn esp(hdc: HDC, _alpha: gl::types::GLfloat) {
     */
 }
 
-fn draw_triangle(hdc: HDC, w: i32, h: i32) {
+fn draw_triangle(hdc: HDC, _w: i32, _h: i32) {
     unsafe {
         wglMakeCurrent(hdc, wglGetCurrentContext());
     }
@@ -381,14 +381,14 @@ fn draw_triangle(hdc: HDC, w: i32, h: i32) {
     use std::mem;
 
     static VERTEX_DATA: [GLfloat; 6] = [0.0, 0.5, 0.5, -0.5, -0.5, -0.5];
-    static VS_SRC: &'static str = "
+    static VS_SRC: &str = "
 #version 150
 in vec2 position;
 void main() {
     gl_Position = vec4(position, 0.0, 1.0);
 }";
 
-    static FS_SRC: &'static str = "
+    static FS_SRC: &str = "
 #version 150
 out vec4 out_color;
 void main() {
