@@ -31,18 +31,22 @@ pub struct Esp {
 
 impl BingusModule for Esp {
     fn new_boxed() -> BoxedBingusModule {
-        Box::new(Self {
-            enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
-                BooleanSetting::new(SettingValue::from(false), "enabled"),
-            )))),
-            settings: Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
-                BingusSettings::FloatSetting(FloatSetting::new(
-                    SettingValue::from(0.0),
-                    "does nothing",
-                    0.0..=100.0,
-                )),
-            ))]))),
-        })
+        let to_ret = {
+            Self {
+                enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
+                    BooleanSetting::new(SettingValue::from(false), "enabled"),
+                )))),
+                settings: Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
+                    BingusSettings::FloatSetting(FloatSetting::new(
+                        SettingValue::from(0.0),
+                        "does nothing",
+                        0.0..=100.0,
+                    )),
+                ))]))),
+            }
+        };
+        BingusModule::add_render_method_to_manager(&to_ret);
+        Box::new(to_ret)
     }
 
     fn tick(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}

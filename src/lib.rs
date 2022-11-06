@@ -52,6 +52,30 @@ static WAITING_CELL: OnceCell<SystemTime> = OnceCell::new();
 pub static mut NEW_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
 pub static mut OLD_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
 
+pub static mut RENDER_MANAGER: OnceCell<RenderManager> = OnceCell::new();
+
+
+pub struct RenderManager {
+    render_methods: Vec<&'static dyn Fn()>,
+}
+
+impl RenderManager {
+    fn new() -> Self {
+        Self {
+            render_methods: Vec::new(),
+        }
+    }
+
+    pub fn add_render_method<'a>(&mut self, method: &'a dyn Fn()) {
+        // transmute to static lifetime
+        let method: &'static dyn Fn() = unsafe { std::mem::transmute(method) };
+        self.render_methods.push(method);
+    }
+
+    fn get_render_methods(&self) -> &Vec<&dyn Fn() -> ()> {
+        &self.render_methods
+    }
+}
 
 
 // utility method for showing a small window, for debugging
@@ -96,6 +120,10 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
     // show a message box if the client got injected
     message_box("injected");
+
+
+
+    RENDER_MANAGER.get_or_init(|| RenderManager::new());
 
     // channel to send and recieve messages involving the thread for the guis
     let (tx, rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
@@ -327,15 +355,10 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
                 }
                 // wait for CLICKGUI_RECEIVER to hear back. multithreading is hell
                 let clickgui_receiver = &*CLICKGUI_RECEIVER
-                    .lock()
+                    .get_mut()
                     .unwrap();
-                if let Some(clickgui_receiver) = clickgui_receiver {
-                    let mut brk = false;
-                    while !brk {
-                        if let Ok(_) = clickgui_receiver.try_recv() {
-                            brk = true;
-                        }
-                    }
+                if let Some(rec) = clickgui_receiver.as_ref() {
+                    rec.recv().unwrap_or_else(|_| {});
                 }
             }
         }
@@ -349,3 +372,5 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
     call_original!(hdc)
 }
 
+// maybe have a struct here with a run method that gets called by the hook and has a vector of function pointers (all the render_event methods from all the modules) that get called to render stuff
+// this way the rendering can still interact with the java side thru the modules but also work with the opengl side

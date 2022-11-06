@@ -4,7 +4,7 @@ use crate::{
         module::{modules::*, BingusModule},
         BoxedBingusModule, Client,
     },
-    ui::widgets::module_widget, OLD_CONTEXT, NEW_CONTEXT, log_to_file, STATIC_HDC,
+    ui::widgets::module_widget, OLD_CONTEXT, NEW_CONTEXT, log_to_file, STATIC_HDC, RENDER_MANAGER, RenderManager,
 };
 use glutin::platform::windows::HGLRC;
 use jni::JNIEnv;
@@ -116,6 +116,7 @@ impl eframe::App for ClickGui {
             CLICKGUI_CONTEXT.get_or_init(|| wglGetCurrentContext())
         };
 
+
         let mut do_render_event = false;
         // shit code idc
         if let Ok(clickgui_message) = self.rx.try_recv() {
@@ -150,7 +151,7 @@ impl eframe::App for ClickGui {
             }
         });
         self.client.lock().unwrap().client_tick();  // maybe make client_tick take a vec of things to tick instead of queuing messages? locks the Client to do all the ticks for each module at once
-
+    
         // set the correct context
         unsafe {
             let hdc = *CLICKGUI_HDC.get().unwrap();

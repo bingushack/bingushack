@@ -1,4 +1,4 @@
-use crate::client::mapping::MappingsManager;
+use crate::{client::mapping::MappingsManager, RENDER_MANAGER};
 use std::{rc::Rc, sync::atomic::AtomicPtr};
 
 use super::{AllSettingsType, SettingType};
@@ -15,6 +15,16 @@ pub trait BingusModule {
         Self: Sized;
 
     fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
+
+    fn add_render_method_to_manager(module: &Self)
+    where
+        Self: Sized
+    {
+        let callback = || Self::render_event(module);
+        unsafe {
+            RENDER_MANAGER.get_mut().unwrap().add_render_method(&callback);
+        }
+    }
 
     fn render_event(&self) {}
 
