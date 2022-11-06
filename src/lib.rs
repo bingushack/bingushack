@@ -43,13 +43,13 @@ use std::sync::atomic::AtomicPtr;
 
 
 
-pub static mut STATIC_HDC: Mutex<HDC> = Mutex::new(null_mut());
+pub static mut STATIC_HDC: Option<HDC> = None;
 static mut CLICKGUI_SENDER: Mutex<Option<Sender<ClickGuiMessage>>> = Mutex::new(None);
 static mut TX: Mutex<Option<Sender<Message>>> = Mutex::new(None);
 
 static WAITING_CELL: OnceCell<SystemTime> = OnceCell::new();
 pub static mut NEW_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
-static mut OLD_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
+pub static mut OLD_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
 
 
 
@@ -173,8 +173,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                             // send a message to the clickgui
                             clickgui_sender
                                 .send(ClickGuiMessage::RunRenderEvent)
-                                .unwrap_or_else(|e| {
-                                    log_to_file(&format!("error sending clickgui message: {}", e));
+                                .unwrap_or_else(|_| {
                                     *CLICKGUI_SENDER.lock().unwrap() = None;  // set it to None so it doesn't keep erroring
                                 });
                         }
@@ -308,30 +307,25 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
                     check
                 }
             } as *const _);
-
-            unsafe {
-                let local_old_context = OLD_CONTEXT.get_mut().unwrap();
-                wglMakeCurrent(hdc, *local_old_context.get_mut());
-            }
         }
         SystemTime::now()
     });
 
-    if is_ready.elapsed().unwrap().as_millis() > 5000 {
+    if is_ready.elapsed().unwrap().as_millis() > 100 {
         unsafe {
-            *STATIC_HDC.get_mut().unwrap() = hdc;
+            STATIC_HDC = Some(hdc);
             if let Ok(guard) = TX.try_lock() {
                 if let Some(tx) = &*guard {
-                    tx.send(Message::RenderEvent).unwrap();
+                    tx.send(Message::RenderEvent).unwrap_or_else(|_| {});
                 }
             }
-
-            let local_old_context = OLD_CONTEXT.get_mut().unwrap();
-            wglMakeCurrent(hdc, *local_old_context.get_mut());
         }
     }
 
-
+    unsafe {
+        let local_old_context = OLD_CONTEXT.get_mut().unwrap();
+        wglMakeCurrent(hdc, *local_old_context.get_mut());
+    }
 
     call_original!(hdc)
 }

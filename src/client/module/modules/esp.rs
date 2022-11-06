@@ -7,12 +7,22 @@ use crate::{client::{
 }, NEW_CONTEXT, STATIC_HDC, log_to_file};
 
 use jni::JNIEnv;
+use once_cell::sync::OnceCell;
 use winapi::{shared::windef::{HDC}, um::{wingdi::{wglGetCurrentContext, wglMakeCurrent}}};
 use std::{
     cell::RefCell,
     rc::Rc,
     sync::{Arc, Mutex}, ffi::CString,
 };
+use gl::types::{GLfloat, GLenum, GLuint, GLchar, GLint, GLboolean, GLsizeiptr};
+    use std::str;
+    use std::ptr;
+    use std::mem;
+
+
+
+
+static mut PROGRAM: OnceCell<GLuint> = OnceCell::new();
 
 pub struct Esp {
     enabled: SettingType,
@@ -42,9 +52,9 @@ impl BingusModule for Esp {
         if self.get_enabled() {
             unsafe {
                 let local_new_context = NEW_CONTEXT.get_mut().unwrap();
-                let hdc = *STATIC_HDC.lock().unwrap();
+                let hdc = STATIC_HDC.unwrap();
                 wglMakeCurrent(hdc, *local_new_context.get_mut());
-                esp(hdc, 1.0)
+                esp(1.0)
             }
         }
     }
@@ -70,7 +80,7 @@ impl BingusModule for Esp {
     }
 }
 
-fn esp(hdc: HDC, _alpha: gl::types::GLfloat) {
+fn esp(_alpha: gl::types::GLfloat) {
     /*
     let rc_cli = null_mut();
     unsafe {
@@ -80,7 +90,7 @@ fn esp(hdc: HDC, _alpha: gl::types::GLfloat) {
     let width = rc_cli.right - rc_cli.left;
     let height = rc_cli.bottom - rc_cli.top;
     */
-    draw_triangle(hdc, 400, 400);
+    draw_triangle(400, 400);
     /*
     unsafe {
         Viewport(0, 0, width, height);
@@ -88,25 +98,16 @@ fn esp(hdc: HDC, _alpha: gl::types::GLfloat) {
     */
 }
 
-fn draw_triangle(hdc: HDC, _w: i32, _h: i32) {
-    unsafe {
-        wglMakeCurrent(hdc, wglGetCurrentContext());
-    }
-
-    use gl::types::{GLfloat, GLenum, GLuint, GLchar, GLint, GLboolean, GLsizeiptr};
-    use std::str;
-    use std::ptr;
-    use std::mem;
-
+fn draw_triangle(_w: i32, _h: i32) {
     static VERTEX_DATA: [GLfloat; 6] = [0.0, 0.5, 0.5, -0.5, -0.5, -0.5];
-    static VS_SRC: &str = "
+    static VS_SRC: &'static str = "
 #version 150
 in vec2 position;
 void main() {
     gl_Position = vec4(position, 0.0, 1.0);
 }";
 
-    static FS_SRC: &str = "
+    static FS_SRC: &'static str = "
 #version 150
 out vec4 out_color;
 void main() {
@@ -114,78 +115,14 @@ void main() {
 }";
 
 
-    fn compile_shader(src: &str, ty: GLenum) -> GLuint {
-        let shader;
-        unsafe {
-            shader = gl::CreateShader(ty);
-            // Attempt to compile the shader
-            let c_str = CString::new(src.as_bytes()).unwrap();
-            gl::ShaderSource(shader, 1, &c_str.as_ptr(), ptr::null());
-            gl::CompileShader(shader);
+    let program: GLuint = unsafe {
+        *PROGRAM.get_or_init(|| {
+            let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
+            let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
 
-            // Get the compile status
-            let mut status = gl::FALSE as GLint;
-            gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut status);
-
-            // Fail on error
-            if status != (gl::TRUE as GLint) {
-                let mut len = 0;
-                gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
-                let mut buf = Vec::with_capacity(len as usize);
-                buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
-                gl::GetShaderInfoLog(
-                    shader,
-                    len,
-                    ptr::null_mut(),
-                    buf.as_mut_ptr() as *mut GLchar,
-                );
-                panic!(
-                    "{}",
-                    str::from_utf8(&buf)
-                        .ok()
-                        .expect("ShaderInfoLog not valid utf8")
-                );
-            }
-        }
-        shader
-    }
-
-    fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
-        unsafe {
-            let program = gl::CreateProgram();
-            gl::AttachShader(program, vs);
-            gl::AttachShader(program, fs);
-            gl::LinkProgram(program);
-            // Get the link status
-            let mut status = gl::FALSE as GLint;
-            gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
-    
-            // Fail on error
-            if status != (gl::TRUE as GLint) {
-                let mut len: GLint = 0;
-                gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
-                let mut buf = Vec::with_capacity(len as usize);
-                buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
-                gl::GetProgramInfoLog(
-                    program,
-                    len,
-                    ptr::null_mut(),
-                    buf.as_mut_ptr() as *mut GLchar,
-                );
-                panic!(
-                    "{}",
-                    str::from_utf8(&buf)
-                        .ok()
-                        .expect("ProgramInfoLog not valid utf8")
-                );
-            }
-            program
-        }
-    }
-
-    let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
-    let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
-    let program = link_program(vs, fs);
+            link_program(vs, fs)
+        })
+    };
 
     let mut vao = 0;
     let mut vbo = 0;
@@ -234,5 +171,78 @@ void main() {
         gl::Clear(gl::COLOR_BUFFER_BIT);
         // Draw a triangle from the 3 vertices
         gl::DrawArrays(gl::TRIANGLES, 0, 3);
+    }
+}
+
+
+
+
+
+fn compile_shader(src: &str, ty: GLenum) -> GLuint {
+    let shader;
+    unsafe {
+        shader = gl::CreateShader(ty);
+        // Attempt to compile the shader
+        let c_str = CString::new(src.as_bytes()).unwrap();
+        gl::ShaderSource(shader, 1, &c_str.as_ptr(), ptr::null());
+        gl::CompileShader(shader);
+
+        // Get the compile status
+        let mut status = gl::FALSE as GLint;
+        gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut status);
+
+        // Fail on error
+        if status != (gl::TRUE as GLint) {
+            let mut len = 0;
+            gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
+            let mut buf = Vec::with_capacity(len as usize);
+            buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
+            gl::GetShaderInfoLog(
+                shader,
+                len,
+                ptr::null_mut(),
+                buf.as_mut_ptr() as *mut GLchar,
+            );
+            panic!(
+                "{}",
+                str::from_utf8(&buf)
+                    .ok()
+                    .expect("ShaderInfoLog not valid utf8")
+            );
+        }
+    }
+    shader
+}
+
+fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
+    unsafe {
+        let program = gl::CreateProgram();
+        gl::AttachShader(program, vs);
+        gl::AttachShader(program, fs);
+        gl::LinkProgram(program);
+        // Get the link status
+        let mut status = gl::FALSE as GLint;
+        gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
+
+        // Fail on error
+        if status != (gl::TRUE as GLint) {
+            let mut len: GLint = 0;
+            gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
+            let mut buf = Vec::with_capacity(len as usize);
+            buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
+            gl::GetProgramInfoLog(
+                program,
+                len,
+                ptr::null_mut(),
+                buf.as_mut_ptr() as *mut GLchar,
+            );
+            panic!(
+                "{}",
+                str::from_utf8(&buf)
+                    .ok()
+                    .expect("ProgramInfoLog not valid utf8")
+            );
+        }
+        program
     }
 }

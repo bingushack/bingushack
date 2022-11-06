@@ -4,12 +4,12 @@ use crate::{
         module::{modules::*, BingusModule},
         BoxedBingusModule, Client,
     },
-    ui::widgets::module_widget, STATIC_HDC, OLD_CONTEXT, NEW_CONTEXT,
+    ui::widgets::module_widget, OLD_CONTEXT, NEW_CONTEXT, log_to_file, STATIC_HDC,
 };
 use glutin::platform::windows::HGLRC;
 use jni::JNIEnv;
 use once_cell::sync::OnceCell;
-use winapi::{um::wingdi::{wglGetCurrentContext, wglMakeCurrent, wglGetCurrentDC}, shared::windef::{HGLRC__, HDC, HDC__}};
+use winapi::{um::wingdi::{wglGetCurrentContext, wglMakeCurrent, wglGetCurrentDC, wglCreateContext}, shared::windef::{HGLRC__, HDC, HDC__}};
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -23,8 +23,8 @@ use eframe::egui;
 static mut ENABLED: bool = false;
 
 // will need one for debug console too if this works
-static mut CLICKGUI_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
-static mut CLICKGUI_HDC: OnceCell<AtomicPtr<HDC__>> = OnceCell::new();
+static mut CLICKGUI_CONTEXT: OnceCell<HGLRC> = OnceCell::new();
+static mut CLICKGUI_HDC: OnceCell<HDC> = OnceCell::new();
 
 pub fn init_clickgui(jni_env: JNIEnv<'static>) -> (ClickGui, Sender<ClickGuiMessage>) {
     let (ntx, nrx) = std::sync::mpsc::channel();
@@ -105,17 +105,24 @@ impl ClickGui {
 }
 
 impl eframe::App for ClickGui {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let _ = unsafe {
-            CLICKGUI_CONTEXT.get_or_init(|| AtomicPtr::new({
-                wglGetCurrentContext()
-            }))
+            CLICKGUI_HDC.get_or_init(|| wglGetCurrentDC())
         };
         let _ = unsafe {
-            CLICKGUI_HDC.get_or_init(|| AtomicPtr::new({
-                wglGetCurrentDC()
-            }))
+            CLICKGUI_CONTEXT.get_or_init(|| wglGetCurrentContext())
         };
+
+        let mut do_render_event = false;
+        // shit code idc
+        if let Ok(clickgui_message) = self.rx.try_recv() {
+            match clickgui_message {
+                ClickGuiMessage::RunRenderEvent => {
+                    do_render_event = true;
+                },
+                _ => {}
+            }
+        }
 
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
             for (i, module) in self.modules.iter().enumerate() {
@@ -124,15 +131,8 @@ impl eframe::App for ClickGui {
                     ui.add(module_widget(&module.borrow()));
                 });
 
-                // shit code idc
-                if let Ok(clickgui_message) = self.rx.try_recv() {
-                    match clickgui_message {
-                        ClickGuiMessage::RunRenderEvent => {
-                            // run the render event
-                            module.borrow().render_event();
-                        },
-                        _ => {}
-                    }
+                if do_render_event {
+                    module.borrow().render_event();
                 }
 
                 // if module is enabled, send a message to the Client to tick the module pointed to by the message
@@ -149,10 +149,10 @@ impl eframe::App for ClickGui {
 
         // set the correct context
         unsafe {
-            let hdc = CLICKGUI_HDC.get_mut().unwrap();
-            let clickgui_context = CLICKGUI_CONTEXT.get_mut().unwrap();
-            wglMakeCurrent(*hdc.get_mut(), *clickgui_context.get_mut());
+            let hdc = *CLICKGUI_HDC.get().unwrap();
+            let context = CLICKGUI_CONTEXT.get_mut().unwrap();
+            wglMakeCurrent(hdc, *context);
         }
-        ctx.request_repaint();  // repaint it because otherwise it wouldn't work i forget why this is needed but it is
+        ctx.request_repaint();  // repaint it because otherwise it wouldn't work i forget why this is needed but it is. but it also breaks things. so idk.
     }
 }
