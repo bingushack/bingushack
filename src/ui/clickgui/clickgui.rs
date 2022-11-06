@@ -4,13 +4,16 @@ use crate::{
         module::{modules::*, BingusModule},
         BoxedBingusModule, Client,
     },
-    ui::widgets::module_widget,
+    ui::widgets::module_widget, STATIC_HDC, OLD_CONTEXT, NEW_CONTEXT,
 };
+use glutin::platform::windows::HGLRC;
 use jni::JNIEnv;
+use once_cell::sync::OnceCell;
+use winapi::{um::wingdi::{wglGetCurrentContext, wglMakeCurrent, wglGetCurrentDC}, shared::windef::{HGLRC__, HDC, HDC__}};
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::Mutex,
+    sync::{Mutex, atomic::AtomicPtr},
     sync::mpsc::{Receiver, Sender},
 };
 
@@ -18,6 +21,10 @@ use eframe::egui;
 
 // mutable statics because i am lazy and it works
 static mut ENABLED: bool = false;
+
+// will need one for debug console too if this works
+static mut CLICKGUI_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
+static mut CLICKGUI_HDC: OnceCell<AtomicPtr<HDC__>> = OnceCell::new();
 
 pub fn init_clickgui(jni_env: JNIEnv<'static>) -> (ClickGui, Sender<ClickGuiMessage>) {
     let (ntx, nrx) = std::sync::mpsc::channel();
@@ -98,7 +105,18 @@ impl ClickGui {
 }
 
 impl eframe::App for ClickGui {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        let _ = unsafe {
+            CLICKGUI_CONTEXT.get_or_init(|| AtomicPtr::new({
+                wglGetCurrentContext()
+            }))
+        };
+        let _ = unsafe {
+            CLICKGUI_HDC.get_or_init(|| AtomicPtr::new({
+                wglGetCurrentDC()
+            }))
+        };
+
         egui::CentralPanel::default().show(ctx, |ui: &mut egui::Ui| {
             for (i, module) in self.modules.iter().enumerate() {
                 // need to push ids because it was reusing ids otherwise and breaking stuff
@@ -128,6 +146,13 @@ impl eframe::App for ClickGui {
             }
         });
         self.client.lock().unwrap().client_tick();  // maybe make client_tick take a vec of things to tick instead of queuing messages? locks the Client to do all the ticks for each module at once
+
+        // set the correct context
+        unsafe {
+            let hdc = CLICKGUI_HDC.get_mut().unwrap();
+            let clickgui_context = CLICKGUI_CONTEXT.get_mut().unwrap();
+            wglMakeCurrent(*hdc.get_mut(), *clickgui_context.get_mut());
+        }
         ctx.request_repaint();  // repaint it because otherwise it wouldn't work i forget why this is needed but it is
     }
 }

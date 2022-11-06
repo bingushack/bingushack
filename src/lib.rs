@@ -161,17 +161,22 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
 
                             // get the clickgui
                             let tmp = init_clickgui(jni_env);
-                            CLICKGUI_SENDER = Mutex::new(Some(tmp.1));
+                            *CLICKGUI_SENDER.lock().unwrap() = Some(tmp.1);
                             run_clickgui(tmp.0);
                         });
                     }
                     Message::KillThread => break,  // exit the loop and start the process of ejection
                     Message::RenderEvent => {
-                        let mut clickgui_sender = CLICKGUI_SENDER.lock().unwrap();
-                        if clickgui_sender.is_some() {
-                            let tmp = clickgui_sender.take().unwrap();
-                            tmp.send(ClickGuiMessage::RunRenderEvent).unwrap();
-                            CLICKGUI_SENDER = Mutex::new(Some(tmp));  // bad bad bad bad
+                        // get the clickgui sender
+                        let clickgui_sender = CLICKGUI_SENDER.lock().unwrap().clone();
+                        if let Some(clickgui_sender) = clickgui_sender {
+                            // send a message to the clickgui
+                            clickgui_sender
+                                .send(ClickGuiMessage::RunRenderEvent)
+                                .unwrap_or_else(|e| {
+                                    log_to_file(&format!("error sending clickgui message: {}", e));
+                                    *CLICKGUI_SENDER.lock().unwrap() = None;  // set it to None so it doesn't keep erroring
+                                });
                         }
                     }
                 },
@@ -303,6 +308,11 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
                     check
                 }
             } as *const _);
+
+            unsafe {
+                let local_old_context = OLD_CONTEXT.get_mut().unwrap();
+                wglMakeCurrent(hdc, *local_old_context.get_mut());
+            }
         }
         SystemTime::now()
     });
@@ -310,18 +320,19 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
     if is_ready.elapsed().unwrap().as_millis() > 5000 {
         unsafe {
             *STATIC_HDC.get_mut().unwrap() = hdc;
-            if let Some(tx) = &*TX.lock().unwrap() {
-                tx.send(Message::RenderEvent).unwrap();
+            if let Ok(guard) = TX.try_lock() {
+                if let Some(tx) = &*guard {
+                    tx.send(Message::RenderEvent).unwrap();
+                }
             }
+
+            let local_old_context = OLD_CONTEXT.get_mut().unwrap();
+            wglMakeCurrent(hdc, *local_old_context.get_mut());
         }
     }
 
 
 
-    unsafe {
-        let local_old_context = OLD_CONTEXT.get_mut().unwrap();
-        wglMakeCurrent(hdc, *local_old_context.get_mut());
-    }
     call_original!(hdc)
 }
 

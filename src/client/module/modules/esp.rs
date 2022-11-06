@@ -4,7 +4,7 @@ use super::{
 use crate::{client::{
     mapping::MappingsManager,
     setting::{BooleanSetting, FloatSetting},
-}, NEW_CONTEXT, STATIC_HDC};
+}, NEW_CONTEXT, STATIC_HDC, log_to_file};
 
 use jni::JNIEnv;
 use winapi::{shared::windef::{HDC}, um::{wingdi::{wglGetCurrentContext, wglMakeCurrent}}};
