@@ -54,7 +54,7 @@ impl BingusModule for Esp {
                 let local_new_context = NEW_CONTEXT.get_mut().unwrap();
                 let hdc = STATIC_HDC.unwrap();
                 wglMakeCurrent(hdc, *local_new_context.get_mut());
-                esp(1.0)
+                esp(1.0);
             }
         }
     }

@@ -26,9 +26,10 @@ static mut ENABLED: bool = false;
 static mut CLICKGUI_CONTEXT: OnceCell<HGLRC> = OnceCell::new();
 static mut CLICKGUI_HDC: OnceCell<HDC> = OnceCell::new();
 
-pub fn init_clickgui(jni_env: JNIEnv<'static>) -> (ClickGui, Sender<ClickGuiMessage>) {
+pub fn init_clickgui(jni_env: JNIEnv<'static>) -> (ClickGui, Sender<ClickGuiMessage>, Receiver<()>) {
     let (ntx, nrx) = std::sync::mpsc::channel();
-    (ClickGui::new(jni_env, nrx), ntx)
+    let (ctx, crx) = std::sync::mpsc::channel();
+    (ClickGui::new(jni_env, nrx, ctx), ntx, crx)
 }
 
 pub fn run_clickgui(app: ClickGui) {
@@ -52,6 +53,7 @@ pub struct ClickGui {
 
     // sender to the client itself
     client_sender: Sender<ClickGuiMessage>,
+    send_messages_back_sender: Sender<()>,
     client: Mutex<Client>, // why does the ClickGui contain the Client and not the other way around????
     // why are the modules in the ClickGui wtf???
     // prolly a better way to do this with hashmaps/hashsets in the future
@@ -59,7 +61,7 @@ pub struct ClickGui {
 }
 
 impl ClickGui {
-    pub fn new(jni_env: JNIEnv<'static>, rx: Receiver<ClickGuiMessage>) -> Self {
+    pub fn new(jni_env: JNIEnv<'static>, rx: Receiver<ClickGuiMessage>, send_messages_back_sender: Sender<()>) -> Self {
         let (client_sender, client_receiver) = std::sync::mpsc::channel();
         let client = Mutex::new(Client::new(jni_env, client_receiver, client_sender.clone()));
         // some macros to make things easier
@@ -77,6 +79,7 @@ impl ClickGui {
         Self {
             rx,
             client_sender,
+            send_messages_back_sender,
             client,
             modules: {
                 // in debug mode it needs to be mutable to add the TestModule but otherwise it doesn't need to be
@@ -133,12 +136,13 @@ impl eframe::App for ClickGui {
 
                 if do_render_event {
                     module.borrow().render_event();
+                    // use send_messages_back_sender to send a message to stop waiting
+                    let _ = self.send_messages_back_sender.send(()).unwrap();
                 }
 
                 // if module is enabled, send a message to the Client to tick the module pointed to by the message
                 let module_enabled = module.borrow().get_enabled();
-                if module_enabled
-                {
+                if module_enabled {
                     self.client_sender
                         .send(ClickGuiMessage::RunModule(Rc::clone(module)))
                         .unwrap();

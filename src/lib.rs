@@ -45,6 +45,7 @@ use std::sync::atomic::AtomicPtr;
 
 pub static mut STATIC_HDC: Option<HDC> = None;
 static mut CLICKGUI_SENDER: Mutex<Option<Sender<ClickGuiMessage>>> = Mutex::new(None);
+static mut CLICKGUI_RECEIVER: Mutex<Option<Receiver<()>>> = Mutex::new(None);
 static mut TX: Mutex<Option<Sender<Message>>> = Mutex::new(None);
 
 static WAITING_CELL: OnceCell<SystemTime> = OnceCell::new();
@@ -162,6 +163,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                             // get the clickgui
                             let tmp = init_clickgui(jni_env);
                             *CLICKGUI_SENDER.lock().unwrap() = Some(tmp.1);
+                            *CLICKGUI_RECEIVER.lock().unwrap() = Some(tmp.2);
                             run_clickgui(tmp.0);
                         });
                     }
@@ -314,9 +316,26 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
     if is_ready.elapsed().unwrap().as_millis() > 100 {
         unsafe {
             STATIC_HDC = Some(hdc);
+
+            // set new context
+            let local_new_context = NEW_CONTEXT.get_mut().unwrap();
+            wglMakeCurrent(hdc, *local_new_context.get_mut());
+
             if let Ok(guard) = TX.try_lock() {
                 if let Some(tx) = &*guard {
                     tx.send(Message::RenderEvent).unwrap_or_else(|_| {});
+                }
+                // wait for CLICKGUI_RECEIVER to hear back. multithreading is hell
+                let clickgui_receiver = &*CLICKGUI_RECEIVER
+                    .lock()
+                    .unwrap();
+                if let Some(clickgui_receiver) = clickgui_receiver {
+                    let mut brk = false;
+                    while !brk {
+                        if let Ok(_) = clickgui_receiver.try_recv() {
+                            brk = true;
+                        }
+                    }
                 }
             }
         }
