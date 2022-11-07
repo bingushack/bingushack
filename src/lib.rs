@@ -2,14 +2,15 @@
 
 mod client;
 mod ui;
+mod managers;
 
 use crate::ui::{
-    clickgui::{init_clickgui, run_clickgui, ClickGuiMessage},
+    clickgui::{init_clickgui, run_clickgui},
     debug_console::{init_debug_console, run_debug_console},
 };
 
-use client::module::SettingType;
 use jni::{JNIEnv, JavaVM};
+use managers::{RenderManager, ClientManager};
 use widestring::WideCString;
 use std::{
     ffi::CString,
@@ -19,7 +20,7 @@ use std::{
         Arc, Mutex,
     },
     thread::sleep,
-    time::{Duration, SystemTime},
+    time::{Duration, SystemTime}, borrow::BorrowMut,
 };
 use ui::{message::Message};
 use winapi::{
@@ -38,6 +39,7 @@ use winapi::{
 };
 use once_cell::sync::OnceCell;
 use std::sync::atomic::AtomicPtr;
+// todo make an imports prelude
 
 
 #[cfg(target_os = "windows")]
@@ -45,38 +47,13 @@ use std::sync::atomic::AtomicPtr;
 
 
 pub static mut STATIC_HDC: Option<HDC> = None;
-static mut CLICKGUI_SENDER: Mutex<Option<Sender<ClickGuiMessage>>> = Mutex::new(None);
-static mut CLICKGUI_RECEIVER: Mutex<Option<Receiver<()>>> = Mutex::new(None);
-static mut TX: Mutex<Option<Sender<Message>>> = Mutex::new(None);
 
 static WAITING_CELL: OnceCell<SystemTime> = OnceCell::new();
 pub static mut NEW_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
 pub static mut OLD_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
 
 pub static mut RENDER_MANAGER: OnceCell<RenderManager> = OnceCell::new();
-
-
-pub struct RenderManager {
-    callbacks: Vec<(&'static dyn Fn(), SettingType)>,
-}
-
-impl RenderManager {
-    fn new() -> Self {
-        Self {
-            callbacks: Vec::new(),
-        }
-    }
-
-    pub fn add_render_method<'a>(&mut self, method: &'a dyn Fn(), enabled: SettingType) {
-        // transmute to static lifetime
-        let method: &'static dyn Fn() = unsafe { std::mem::transmute(method) };
-        self.callbacks.push((method, enabled));
-    }
-
-    fn get_render_methods(&self) -> &Vec<(&dyn Fn(), SettingType)> {
-        &self.callbacks
-    }
-}
+pub static mut CLIENT_MANAGER: OnceCell<ClientManager> = OnceCell::new();
 
 
 // utility method for showing a small window, for debugging
@@ -127,23 +104,12 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     RENDER_MANAGER.get_or_init(|| RenderManager::new());
 
     // channel to send and recieve messages involving the thread for the guis
-    let (tx, rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
-    *TX.lock().unwrap() = Some(tx.clone());
+    let (clickgui_tx, clickgui_rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
     let clickgui_thread = std::thread::spawn(move || {
-        // after clickgui is enabled, you can use tx_clickgui to send messages to the clickgui
-        // and rx_clickgui to receive messages from the clickgui
-        let (_tx_clickgui, _rx_clickgui): (
-            Arc<Mutex<Sender<ClickGuiMessage>>>,
-            Arc<Mutex<Receiver<ClickGuiMessage>>>,
-        ) = {
-            let (tx, rx) = mpsc::channel();
-            (Arc::new(Mutex::new(tx)), Arc::new(Mutex::new(rx)))
-        };
-
         let mut debug_console_sender: Option<Sender<String>> = None;
         let mut debug_console;
         loop {
-            match rx.recv() {
+            match clickgui_rx.recv() {
                 Ok(message) => match message {
                     Message::SpawnDebugConsole => {
                         // get the debug console object and a sender to it
@@ -189,32 +155,41 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                                 std::mem::transmute::<JNIEnv<'_>, JNIEnv<'static>>(jni_env);
                             // transmute the jni environment to a static lifetime to make it easier to use also it's a daemon thread
 
+                            let _ = CLIENT_MANAGER.set(ClientManager::new(jni_env));
+                            let modules = CLIENT_MANAGER.get().unwrap().get_modules();
+
                             // get the clickgui
-                            let tmp = init_clickgui(jni_env);
-                            *CLICKGUI_SENDER.lock().unwrap() = Some(tmp.1);
-                            *CLICKGUI_RECEIVER.lock().unwrap() = Some(tmp.2);
-                            run_clickgui(tmp.0);
+                            let clickgui = init_clickgui(modules);
+                            run_clickgui(clickgui);
                         });
                     }
                     Message::KillThread => break,  // exit the loop and start the process of ejection
-                    /*Message::RenderEvent => {
-                        // get the clickgui sender
-                        let clickgui_sender = CLICKGUI_SENDER.lock().unwrap().clone();
-                        if let Some(clickgui_sender) = clickgui_sender {
-                            // send a message to the clickgui
-                            clickgui_sender
-                                .send(ClickGuiMessage::RunRenderEvent)
-                                .unwrap_or_else(|_| {
-                                    *CLICKGUI_SENDER.lock().unwrap() = None;  // set it to None so it doesn't keep erroring
-                                });
-                        }
-                    }*/
-                    _ => {}
                 },
                 Err(_) => {}
             };
         }
         0  // return 0 as an exit code for the dll
+    });
+
+    let (client_tx, client_rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
+    let client_thread = std::thread::spawn(move || {
+        loop {
+            match client_rx.recv() {
+                Ok(msg) => match msg {
+                    Message::KillThread => break,
+                    _ => {}
+                },
+                Err(_) => {
+                    // might not wanna grab this constantly but hey that's for the future
+                    match CLIENT_MANAGER.get() {
+                        Some(client_manager) => {
+                            client_manager.client_tick();
+                        }
+                        None => {}
+                    }
+                }
+            }
+        }
     });
 
     // this is ugly
@@ -247,20 +222,22 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
         //
         // send a message to the clickgui_thread thread to spawn a window or kill the thread
         if GetAsyncKeyState(VK_LEFT) & 0x01 == 1 {
-            tx.send(Message::SpawnDebugConsole).unwrap();
+            clickgui_tx.send(Message::SpawnDebugConsole).unwrap();
         }
         if GetAsyncKeyState(VK_RIGHT) & 0x01 == 1 {
-            tx.send(Message::SpawnGui).unwrap();
+            clickgui_tx.send(Message::SpawnGui).unwrap();
         }
         if GetAsyncKeyState(VK_DOWN) & 0x01 == 1 {
             break;
         }
     }
 
-    // tell the clickgui_thread to kill itself
-    tx.send(Message::KillThread).unwrap();
+    // tell the threads to kill themselves
+    clickgui_tx.send(Message::KillThread).unwrap();
+    client_tx.send(Message::KillThread).unwrap();
     // wait for the clickgui_thread to exit
     let eject_code = clickgui_thread.join().unwrap();
+    let _ = client_thread.join().unwrap();
     // let the user know that the client is ejecting
     message_box("ejected");
     // winapi method to exit dll's thread
@@ -351,18 +328,6 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
             let local_new_context = NEW_CONTEXT.get_mut().unwrap();
             wglMakeCurrent(hdc, *local_new_context.get_mut());
 
-            /*if let Ok(guard) = TX.try_lock() {
-                if let Some(tx) = &*guard {
-                    tx.send(Message::RenderEvent).unwrap_or_else(|_| {});
-                }
-                // wait for CLICKGUI_RECEIVER to hear back. multithreading is hell
-                let clickgui_receiver = &*CLICKGUI_RECEIVER
-                    .get_mut()
-                    .unwrap();
-                if let Some(rec) = clickgui_receiver.as_ref() {
-                    rec.recv().unwrap_or_else(|_| {});
-                }
-            }*/
             let manager = RENDER_MANAGER.get();
             if let Some(manager) = manager {
                 for callback in manager.get_render_methods() {
