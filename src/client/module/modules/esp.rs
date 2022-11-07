@@ -23,7 +23,6 @@ use gl::types::{GLfloat, GLenum, GLuint, GLchar, GLint, GLboolean, GLsizeiptr};
 
 
 static mut PROGRAM: OnceCell<GLuint> = OnceCell::new();
-static mut ESP_WAITING_CELL: OnceCell<SystemTime> = OnceCell::new();
 
 pub struct Esp {
     enabled: SettingType,
@@ -53,12 +52,6 @@ impl BingusModule for Esp {
     fn tick(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
     fn render_event(&self) {
-        let is_ready = unsafe {
-            ESP_WAITING_CELL.get_or_init(|| SystemTime::now())
-        };
-        if is_ready.elapsed().unwrap().as_millis() < 5000 {
-            return;
-        }
         esp(1.0);
     }
 
@@ -120,7 +113,6 @@ void main() {
 
     let program: GLuint = unsafe {
         *PROGRAM.get_or_init(|| {
-            log_to_file("this should happen once");
             let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
             let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
 
@@ -170,8 +162,8 @@ void main() {
     }
 
     unsafe {
-        // Clear the screen to black
-        gl::ClearColor(0.7, 0.1, 0.1, 1.0);
+        // Clear the screen to a solid color
+        gl::ClearColor(0.8, 0.1, 0.1, 1.0);
         gl::Clear(gl::COLOR_BUFFER_BIT);
         // Draw a triangle from the 3 vertices
         gl::DrawArrays(gl::TRIANGLES, 0, 3);
