@@ -22,7 +22,22 @@ use gl::types::{GLfloat, GLenum, GLuint, GLchar, GLint, GLboolean, GLsizeiptr};
 
 
 
-static mut PROGRAM: OnceCell<GLuint> = OnceCell::new();
+const PROGRAM: OnceCell<GLuint> = OnceCell::new();
+
+static VERTEX_DATA: [GLfloat; 6] = [0.0, 0.5, 0.5, -0.5, -0.5, -0.5];
+static VS_SRC: &str = "
+#version 150
+in vec2 position;
+void main() {
+    gl_Position = vec4(position, 0.0, 1.0);
+}";
+
+static FS_SRC: &str = "
+#version 150
+out vec4 out_color;
+void main() {
+    out_color = vec4(1.0, 1.0, 1.0, 1.0);
+}";
 
 pub struct Esp {
     enabled: SettingType,
@@ -95,30 +110,15 @@ fn esp(_alpha: gl::types::GLfloat) {
 }
 
 fn draw_triangle(_w: i32, _h: i32) {
-    static VERTEX_DATA: [GLfloat; 6] = [0.0, 0.5, 0.5, -0.5, -0.5, -0.5];
-    static VS_SRC: &'static str = "
-#version 150
-in vec2 position;
-void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
-}";
+    let program: GLuint = PROGRAM.get_or_init(|| {
+        log_to_file("pre-vextex shader compilation");
+        let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
+        log_to_file("pre-fragment shader compilation");
+        let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
 
-    static FS_SRC: &'static str = "
-#version 150
-out vec4 out_color;
-void main() {
-    out_color = vec4(1.0, 1.0, 1.0, 1.0);
-}";
-
-
-    let program: GLuint = unsafe {
-        *PROGRAM.get_or_init(|| {
-            let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
-            let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
-
-            link_program(vs, fs)
-        })
-    };
+        log_to_file("pre-program linking");
+        link_program(vs, fs)
+    }).clone();
 
     let mut vao = 0;
     let mut vbo = 0;
@@ -145,11 +145,13 @@ void main() {
         // Use shader program
         gl::UseProgram(program);
         let out_color_str = CString::new("out_color").unwrap();
-        gl::BindFragDataLocation(program, 0, out_color_str.as_ptr());
+        let out_color_str_ptr = out_color_str.as_ptr();
+        gl::BindFragDataLocation(program, 0, out_color_str_ptr);
         
         // Specify the layout of the vertex data
         let pos_str = CString::new("position").unwrap();
-        let pos_attr = gl::GetAttribLocation(program, pos_str.as_ptr());
+        let pos_str_ptr = pos_str.as_ptr();
+        let pos_attr = gl::GetAttribLocation(program, pos_str_ptr);
         gl::EnableVertexAttribArray(pos_attr as GLuint);
         gl::VertexAttribPointer(
             pos_attr as GLuint,
@@ -180,7 +182,8 @@ fn compile_shader(src: &str, ty: GLenum) -> GLuint {
         shader = gl::CreateShader(ty);
         // Attempt to compile the shader
         let c_str = CString::new(src.as_bytes()).unwrap();
-        gl::ShaderSource(shader, 1, &c_str.as_ptr(), ptr::null());
+        let c_str_ptr = c_str.as_ptr();
+        gl::ShaderSource(shader, 1, &c_str_ptr, ptr::null());
         gl::CompileShader(shader);
 
         // Get the compile status
@@ -192,7 +195,7 @@ fn compile_shader(src: &str, ty: GLenum) -> GLuint {
             let mut len = 0;
             gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
             let mut buf = Vec::with_capacity(len as usize);
-            buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
+            //buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
             gl::GetShaderInfoLog(
                 shader,
                 len,
@@ -200,7 +203,7 @@ fn compile_shader(src: &str, ty: GLenum) -> GLuint {
                 buf.as_mut_ptr() as *mut GLchar,
             );
             panic!(
-                "{}",
+                "failed to compile shader: {}",
                 str::from_utf8(&buf)
                     .ok()
                     .expect("ShaderInfoLog not valid utf8")
@@ -225,7 +228,7 @@ fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
             let mut len: GLint = 0;
             gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
             let mut buf = Vec::with_capacity(len as usize);
-            buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
+            //buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
             gl::GetProgramInfoLog(
                 program,
                 len,
@@ -233,7 +236,7 @@ fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
                 buf.as_mut_ptr() as *mut GLchar,
             );
             panic!(
-                "{}",
+                "failed to link shader: {}",
                 str::from_utf8(&buf)
                     .ok()
                     .expect("ProgramInfoLog not valid utf8")
