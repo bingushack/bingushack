@@ -12,7 +12,7 @@ use winapi::{shared::windef::{HDC}, um::{wingdi::{wglGetCurrentContext, wglMakeC
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::{Arc, Mutex}, ffi::CString,
+    sync::{Arc, Mutex}, ffi::CString, time::{Duration, SystemTime},
 };
 use gl::types::{GLfloat, GLenum, GLuint, GLchar, GLint, GLboolean, GLsizeiptr};
     use std::str;
@@ -23,6 +23,7 @@ use gl::types::{GLfloat, GLenum, GLuint, GLchar, GLint, GLboolean, GLsizeiptr};
 
 
 static mut PROGRAM: OnceCell<GLuint> = OnceCell::new();
+static mut ESP_WAITING_CELL: OnceCell<SystemTime> = OnceCell::new();
 
 pub struct Esp {
     enabled: SettingType,
@@ -52,15 +53,13 @@ impl BingusModule for Esp {
     fn tick(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
     fn render_event(&self) {
-        // if enabled
-        if self.get_enabled() {
-            unsafe {
-                let local_new_context = NEW_CONTEXT.get_mut().unwrap();
-                let hdc = STATIC_HDC.unwrap();
-                wglMakeCurrent(hdc, *local_new_context.get_mut());
-                esp(1.0);
-            }
+        let is_ready = unsafe {
+            ESP_WAITING_CELL.get_or_init(|| SystemTime::now())
+        };
+        if is_ready.elapsed().unwrap().as_millis() < 5000 {
+            return;
         }
+        esp(1.0);
     }
 
     fn on_load(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
@@ -121,6 +120,7 @@ void main() {
 
     let program: GLuint = unsafe {
         *PROGRAM.get_or_init(|| {
+            log_to_file("this should happen once");
             let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
             let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
 

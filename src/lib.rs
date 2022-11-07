@@ -8,6 +8,7 @@ use crate::ui::{
     debug_console::{init_debug_console, run_debug_console},
 };
 
+use client::module::SettingType;
 use jni::{JNIEnv, JavaVM};
 use widestring::WideCString;
 use std::{
@@ -56,24 +57,24 @@ pub static mut RENDER_MANAGER: OnceCell<RenderManager> = OnceCell::new();
 
 
 pub struct RenderManager {
-    render_methods: Vec<&'static dyn Fn()>,
+    callbacks: Vec<(&'static dyn Fn(), SettingType)>,
 }
 
 impl RenderManager {
     fn new() -> Self {
         Self {
-            render_methods: Vec::new(),
+            callbacks: Vec::new(),
         }
     }
 
-    pub fn add_render_method<'a>(&mut self, method: &'a dyn Fn()) {
+    pub fn add_render_method<'a>(&mut self, method: &'a dyn Fn(), enabled: SettingType) {
         // transmute to static lifetime
         let method: &'static dyn Fn() = unsafe { std::mem::transmute(method) };
-        self.render_methods.push(method);
+        self.callbacks.push((method, enabled));
     }
 
-    fn get_render_methods(&self) -> &Vec<&dyn Fn() -> ()> {
-        &self.render_methods
+    fn get_render_methods(&self) -> &Vec<(&dyn Fn(), SettingType)> {
+        &self.callbacks
     }
 }
 
@@ -196,7 +197,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                         });
                     }
                     Message::KillThread => break,  // exit the loop and start the process of ejection
-                    Message::RenderEvent => {
+                    /*Message::RenderEvent => {
                         // get the clickgui sender
                         let clickgui_sender = CLICKGUI_SENDER.lock().unwrap().clone();
                         if let Some(clickgui_sender) = clickgui_sender {
@@ -207,7 +208,8 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                                     *CLICKGUI_SENDER.lock().unwrap() = None;  // set it to None so it doesn't keep erroring
                                 });
                         }
-                    }
+                    }*/
+                    _ => {}
                 },
                 Err(_) => {}
             };
@@ -349,7 +351,7 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
             let local_new_context = NEW_CONTEXT.get_mut().unwrap();
             wglMakeCurrent(hdc, *local_new_context.get_mut());
 
-            if let Ok(guard) = TX.try_lock() {
+            /*if let Ok(guard) = TX.try_lock() {
                 if let Some(tx) = &*guard {
                     tx.send(Message::RenderEvent).unwrap_or_else(|_| {});
                 }
@@ -359,6 +361,22 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
                     .unwrap();
                 if let Some(rec) = clickgui_receiver.as_ref() {
                     rec.recv().unwrap_or_else(|_| {});
+                }
+            }*/
+            let manager = RENDER_MANAGER.get();
+            if let Some(manager) = manager {
+                for callback in manager.get_render_methods() {
+                    let (callback, enabled) = callback;
+                    if enabled
+                        .lock()
+                        .unwrap()
+                        .borrow()
+                        .get_value()
+                        .try_into()
+                        .unwrap()
+                    {
+                        callback();
+                    }
                 }
             }
         }

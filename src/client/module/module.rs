@@ -1,4 +1,4 @@
-use crate::{client::mapping::MappingsManager, RENDER_MANAGER};
+use crate::{client::mapping::MappingsManager, RENDER_MANAGER, log_to_file};
 use std::{rc::Rc, sync::atomic::AtomicPtr};
 
 use super::{AllSettingsType, SettingType};
@@ -22,7 +22,7 @@ pub trait BingusModule {
     {
         let callback = || Self::render_event(module);
         unsafe {
-            RENDER_MANAGER.get_mut().unwrap().add_render_method(&callback);
+            RENDER_MANAGER.get_mut().unwrap().add_render_method(&callback, Self::get_enabled_setting(module));
         }
     }
 

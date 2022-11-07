@@ -136,7 +136,7 @@ impl eframe::App for ClickGui {
                 });
 
                 if do_render_event {
-                    module.borrow().render_event();
+                    //module.borrow().render_event();
                     // use send_messages_back_sender to send a message to stop waiting
                     let _ = self.send_messages_back_sender.send(()).unwrap();
                 }
