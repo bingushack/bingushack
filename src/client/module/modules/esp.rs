@@ -12,26 +12,27 @@ use winapi::{shared::windef::{HDC}, um::{wingdi::{wglGetCurrentContext, wglMakeC
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::{Arc, Mutex}, ffi::CString, time::{Duration, SystemTime},
+    sync::{Arc, Mutex, Once}, ffi::CString, time::{Duration, SystemTime},
 };
 use gl::types::{GLfloat, GLenum, GLuint, GLchar, GLint, GLboolean, GLsizeiptr};
-    use std::str;
-    use std::ptr;
-    use std::mem;
+use std::str;
+use std::ptr;
+use std::mem;
 
 
 
 
-const PROGRAM: OnceCell<GLuint> = OnceCell::new();
+pub static ESP_PROGRAM_COMPILE: Once = Once::new();
+static ESP_PROGRAM: OnceCell<GLuint> = OnceCell::new();
 
 static VERTEX_DATA: [GLfloat; 6] = [0.0, 0.5, 0.5, -0.5, -0.5, -0.5];
+
 static VS_SRC: &str = "
 #version 150
 in vec2 position;
 void main() {
     gl_Position = vec4(position, 0.0, 1.0);
 }";
-
 static FS_SRC: &str = "
 #version 150
 out vec4 out_color;
@@ -110,15 +111,7 @@ fn esp(_alpha: gl::types::GLfloat) {
 }
 
 fn draw_triangle(_w: i32, _h: i32) {
-    let program: GLuint = PROGRAM.get_or_init(|| {
-        log_to_file("pre-vextex shader compilation");
-        let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
-        log_to_file("pre-fragment shader compilation");
-        let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
-
-        log_to_file("pre-program linking");
-        link_program(vs, fs)
-    }).clone();
+    let program: GLuint = ESP_PROGRAM.get().unwrap().clone();
 
     let mut vao = 0;
     let mut vbo = 0;
@@ -174,6 +167,14 @@ fn draw_triangle(_w: i32, _h: i32) {
 
 
 
+
+pub fn compile_esp() {
+    let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
+    let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
+    ESP_PROGRAM.get_or_init(|| {
+        link_program(vs, fs)
+    });
+}
 
 
 fn compile_shader(src: &str, ty: GLenum) -> GLuint {

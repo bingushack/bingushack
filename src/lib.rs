@@ -4,10 +4,10 @@ mod client;
 mod ui;
 mod managers;
 
-use crate::ui::{
+use crate::{ui::{
     clickgui::{init_clickgui, run_clickgui},
     debug_console::{init_debug_console, run_debug_console},
-};
+}, client::module::modules::{compile_esp, ESP_PROGRAM_COMPILE}};
 
 use jni::{JNIEnv, JavaVM};
 use managers::{RenderManager, ClientManager};
@@ -316,6 +316,10 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
                     check
                 }
             } as *const _);
+
+            ESP_PROGRAM_COMPILE.call_once(|| {
+                compile_esp();
+            });
         }
         SystemTime::now()
     });
