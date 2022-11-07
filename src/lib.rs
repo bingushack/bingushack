@@ -158,9 +158,16 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                             let _ = CLIENT_MANAGER.set(ClientManager::new(jni_env));
                             let modules = CLIENT_MANAGER.get().unwrap().get_modules();
 
+                            // enable the CLIENT_MANAGER
+                            CLIENT_MANAGER.get_mut().unwrap().set_enabled(true);
+
+
                             // get the clickgui
                             let clickgui = init_clickgui(modules);
                             run_clickgui(clickgui);
+
+                            // disable the CLIENT_MANAGER
+                            CLIENT_MANAGER.get_mut().unwrap().set_enabled(false);
                         });
                     }
                     Message::KillThread => break,  // exit the loop and start the process of ejection
@@ -174,20 +181,26 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     let (client_tx, client_rx): (Sender<Message>, Receiver<Message>) = mpsc::channel();
     let client_thread = std::thread::spawn(move || {
         loop {
-            match client_rx.recv() {
-                Ok(msg) => match msg {
-                    Message::KillThread => break,
-                    _ => {}
-                },
-                Err(_) => {
-                    // might not wanna grab this constantly but hey that's for the future
+            match client_rx.try_recv() {
+                Ok(msg) => if msg == Message::KillThread {
+                    break;
+                } else {
                     match CLIENT_MANAGER.get() {
                         Some(client_manager) => {
-                            client_manager.client_tick();
+                            client_manager.call_callbacks();
                         }
                         None => {}
                     }
-                }
+                },
+                _ => {
+                    // might not wanna grab this constantly but hey that's for the future
+                    match CLIENT_MANAGER.get() {
+                        Some(client_manager) => {
+                            client_manager.call_callbacks();
+                        }
+                        None => {}
+                    }
+                },
             }
         }
     });

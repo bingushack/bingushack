@@ -1,9 +1,9 @@
 use crate::{
     client::{
         module::{modules::*, BingusModule},
-        BoxedBingusModule, Client,
+        BoxedBingusModule,
     },
-    ui::widgets::module_widget, OLD_CONTEXT, NEW_CONTEXT, log_to_file, STATIC_HDC, RENDER_MANAGER, RenderManager,
+    ui::widgets::module_widget, OLD_CONTEXT, NEW_CONTEXT, log_to_file, STATIC_HDC, RENDER_MANAGER, RenderManager, managers::ModulesRc,
 };
 use glutin::platform::windows::HGLRC;
 use jni::JNIEnv;
@@ -25,7 +25,7 @@ static mut ENABLED: bool = false;
 static mut CLICKGUI_CONTEXT: OnceCell<HGLRC> = OnceCell::new();
 static mut CLICKGUI_HDC: OnceCell<HDC> = OnceCell::new();
 
-pub fn init_clickgui(modules: Rc<Vec<Rc<RefCell<BoxedBingusModule>>>>) -> ClickGui {
+pub fn init_clickgui(modules: ModulesRc) -> ClickGui {
     ClickGui::new(modules)
 }
 
@@ -47,11 +47,11 @@ pub fn run_clickgui(app: ClickGui) {
 
 pub struct ClickGui {
     // prolly a better way to do this with hashmaps/hashsets in the future
-    modules: Rc<Vec<Rc<RefCell<BoxedBingusModule>>>>,
+    modules: ModulesRc,
 }
 
 impl ClickGui {
-    pub fn new(modules: Rc<Vec<Rc<RefCell<BoxedBingusModule>>>>) -> Self {
+    pub fn new(modules: ModulesRc) -> Self {
         Self {
             modules,
         }

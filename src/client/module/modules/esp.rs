@@ -42,30 +42,34 @@ void main() {
 
 pub struct Esp {
     enabled: SettingType,
+
     settings: AllSettingsType,
 }
 
 impl BingusModule for Esp {
-    fn new_boxed() -> BoxedBingusModule {
-        let to_ret = {
-            Self {
-                enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
-                    BooleanSetting::new(SettingValue::from(false), "enabled"),
-                )))),
-                settings: Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
-                    BingusSettings::FloatSetting(FloatSetting::new(
-                        SettingValue::from(0.0),
-                        "does nothing",
-                        0.0..=100.0,
-                    )),
-                ))]))),
-            }
+    fn new_boxed(env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) -> BoxedBingusModule {
+        let to_ret = Self {
+            enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
+                BooleanSetting::new(SettingValue::from(false), "enabled"),
+            )))),
+            settings: Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
+                BingusSettings::FloatSetting(FloatSetting::new(
+                    SettingValue::from(0.0),
+                    "does nothing",
+                    0.0..=100.0,
+                )),
+            ))]))),
         };
-        BingusModule::add_render_method_to_manager(&to_ret);
-        Box::new(to_ret)
+
+        let to_ret = Box::new(to_ret);
+
+        let to_ret = unsafe { std::mem::transmute::<Box<Self>, BoxedBingusModule>(to_ret) };
+        <crate::client::module::modules::esp::Esp as BingusModule>::add_client_tick_method_to_manager(*to_ret, env, mappings_manager);
+        <crate::client::module::modules::esp::Esp as BingusModule>::add_render_method_to_manager(*to_ret);
+        to_ret
     }
 
-    fn tick(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn tick(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
     fn render_event(&self) {
         esp(1.0);

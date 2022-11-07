@@ -27,13 +27,14 @@ use std::{
 pub struct AutoTotem {
     // todo make this enabled settings boilerplate shit a proc macro
     enabled: SettingType,
+
     settings: AllSettingsType,
-    needing_swap_time: SystemTime,
+    needing_swap_time: RefCell<SystemTime>,
 }
 
 impl BingusModule for AutoTotem {
-    fn new_boxed() -> BoxedBingusModule {
-        Box::new(Self {
+    fn new_boxed(env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) -> BoxedBingusModule {
+        let to_ret = Self {
             enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
                 BooleanSetting::new(SettingValue::from(false), "enabled"),
             )))),
@@ -49,11 +50,17 @@ impl BingusModule for AutoTotem {
                     ),
                 ))),
             ]))),
-            needing_swap_time: SystemTime::now(),
-        })
+            needing_swap_time: RefCell::new(SystemTime::now()),
+        };
+        let to_ret = Box::new(to_ret);
+
+        let to_ret = unsafe { std::mem::transmute::<Box<Self>, BoxedBingusModule>(to_ret) };
+        <crate::client::module::modules::autototem::AutoTotem as BingusModule>::add_client_tick_method_to_manager(*to_ret, env, mappings_manager);
+        <crate::client::module::modules::autototem::AutoTotem as BingusModule>::add_render_method_to_manager(*to_ret);
+        to_ret
     }
 
-    fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
+    fn tick(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
         let minecraft_client = mappings_manager.get("MinecraftClient").unwrap();
         apply_object!(
             minecraft_client,
@@ -116,7 +123,7 @@ impl BingusModule for AutoTotem {
 
         if !offhand_is_totem {
             {
-                let time_since_lost_totem = SystemTime::now().duration_since(self.needing_swap_time).unwrap().as_millis();
+                let time_since_lost_totem = SystemTime::now().duration_since(*self.needing_swap_time.borrow()).unwrap().as_millis();
                 let next_delay = {
                     let settings_mutex_guard = self.settings.lock().unwrap();
                     let settings = settings_mutex_guard.borrow();
@@ -128,7 +135,7 @@ impl BingusModule for AutoTotem {
                 if time_since_lost_totem < next_delay * 10 {
                     return;
                 } else {
-                    self.needing_swap_time = SystemTime::now();
+                    *self.needing_swap_time.borrow_mut() = SystemTime::now();
                 }
             }
 

@@ -1,4 +1,4 @@
-use crate::{client::mapping::MappingsManager, RENDER_MANAGER, log_to_file};
+use crate::{client::mapping::MappingsManager, RENDER_MANAGER, log_to_file, CLIENT_MANAGER};
 use std::{rc::Rc, sync::atomic::AtomicPtr};
 
 use super::{AllSettingsType, SettingType};
@@ -10,19 +10,42 @@ use winapi::shared::windef::HDC__;
 // atm it is a trait which each module implements
 pub trait BingusModule {
     // where you add the fields to the struct including enabled or not and settings
-    fn new_boxed() -> BoxedBingusModule
+    fn new_boxed(env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) -> BoxedBingusModule
     where
         Self: Sized;
 
-    fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
+    fn tick(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
 
-    fn add_render_method_to_manager(module: &Self)
+    fn if_enabled_tick(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
+        if self.get_enabled() {
+            self.tick(env, mappings_manager);
+        }
+    }
+
+    fn add_render_method_to_manager(module: &'static dyn BingusModule)
     where
         Self: Sized
     {
-        let callback = || Self::render_event(module);
+        fn foo(module: &dyn BingusModule) -> Box<dyn Fn() -> () + 'static> {
+            let module = unsafe { std::mem::transmute::<&dyn BingusModule, &dyn BingusModule>(module) };
+            Box::new(move || module.render_event())
+        }
+        let callback = foo(module);
         unsafe {
-            RENDER_MANAGER.get_mut().unwrap().add_render_method(&callback, Self::get_enabled_setting(module));
+            RENDER_MANAGER.get_mut().unwrap().add_render_method(&callback, module.get_enabled_setting());
+        }
+    }
+
+    fn add_client_tick_method_to_manager(module: &'static dyn BingusModule, env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>)
+    where
+        Self: Sized
+    {
+        fn foo(module: &'static dyn BingusModule, env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) -> Box<dyn Fn() -> () + 'static> {
+            Box::new(move || BingusModule::if_enabled_tick(module, Rc::clone(&env), Rc::clone(&mappings_manager)))
+        }
+        let callback = foo(module, env, mappings_manager);
+        unsafe {
+            CLIENT_MANAGER.get_mut().unwrap().add_callback(callback, module.get_enabled_setting());
         }
     }
 

@@ -25,12 +25,13 @@ use std::{
 
 pub struct Triggerbot {
     enabled: SettingType,
+
     settings: AllSettingsType,
 }
 
 impl BingusModule for Triggerbot {
-    fn new_boxed() -> BoxedBingusModule {
-        Box::new(Self {
+    fn new_boxed(env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) -> BoxedBingusModule {
+        let to_ret = Self {
             enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
                 BooleanSetting::new(SettingValue::from(false), "enabled"),
             )))),
@@ -41,11 +42,18 @@ impl BingusModule for Triggerbot {
                     0.0..=5.0,
                 )),
             ))]))),
-        })
+        };
+        
+        let to_ret = Box::new(to_ret);
+
+        let to_ret = unsafe { std::mem::transmute::<Box<Self>, BoxedBingusModule>(to_ret) };
+        <crate::client::module::modules::triggerbot::Triggerbot as BingusModule>::add_client_tick_method_to_manager(*to_ret, env, mappings_manager);
+        <crate::client::module::modules::triggerbot::Triggerbot as BingusModule>::add_render_method_to_manager(*to_ret);
+        to_ret
     }
 
     // todo make it so it won't attack if you're in a container (chest etc)
-    fn tick(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
+    fn tick(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
         // check if player is targetting an entity
         let minecraft_client = mappings_manager.get("MinecraftClient").unwrap();
         apply_object!(

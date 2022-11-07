@@ -1,7 +1,7 @@
 mod module;
 pub mod modules;
 
-pub use self::module::BingusModule;
+pub use self::module::{BingusModule};
 
 use super::{
     setting::{BingusSettings, SettingValue},
