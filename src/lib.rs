@@ -7,7 +7,7 @@ mod managers;
 use crate::{ui::{
     clickgui::{init_clickgui, run_clickgui},
     debug_console::{init_debug_console, run_debug_console},
-}, client::module::modules::{compile_esp, ESP_PROGRAM_COMPILE}};
+}, client::{module::{modules::*, BingusModule}, MappingsManager}};
 
 use jni::{JNIEnv, JavaVM};
 use managers::{RenderManager, ClientManager};
@@ -17,10 +17,11 @@ use std::{
     sync::{
         mpsc,
         mpsc::{Receiver, Sender},
-        Arc, Mutex,
+        Arc, Mutex, Once,
     },
     thread::sleep,
-    time::{Duration, SystemTime}, borrow::BorrowMut,
+    time::{Duration, SystemTime}, borrow::BorrowMut, rc::Rc,
+    cell::RefCell,
 };
 use ui::{message::Message};
 use winapi::{
@@ -46,14 +47,15 @@ use std::sync::atomic::AtomicPtr;
 
 
 
-pub static mut STATIC_HDC: Option<HDC> = None;
+static mut STATIC_HDC: Option<HDC> = None;
+static RENDER_WAITING_CELL: OnceCell<SystemTime> = OnceCell::new();
+static mut NEW_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
+static mut OLD_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
 
-static WAITING_CELL: OnceCell<SystemTime> = OnceCell::new();
-pub static mut NEW_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
-pub static mut OLD_CONTEXT: OnceCell<AtomicPtr<HGLRC__>> = OnceCell::new();
+static mut RENDER_MANAGER: OnceCell<RenderManager> = OnceCell::new();
+static mut CLIENT_MANAGER: OnceCell<ClientManager> = OnceCell::new();
 
-pub static mut RENDER_MANAGER: OnceCell<RenderManager> = OnceCell::new();
-pub static mut CLIENT_MANAGER: OnceCell<ClientManager> = OnceCell::new();
+//static ON_CLIENT_LOAD: Once = Once::new();
 
 
 // utility method for showing a small window, for debugging
@@ -156,10 +158,51 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                             // transmute the jni environment to a static lifetime to make it easier to use also it's a daemon thread
 
                             let _ = CLIENT_MANAGER.set(ClientManager::new(jni_env));
-                            let modules = CLIENT_MANAGER.get().unwrap().get_modules();
+                            let client_manager = CLIENT_MANAGER.get_mut().unwrap();
+                            let modules = {
+                                // some macros to make things easier
+                                //
+                                // this macro will make a vector containing all the modules it is given and returns it
+                                macro_rules! modules_maker {
+                                    ($($module:expr),*) => {{
+                                        let mut temp_vec = Vec::new();
+                                        $(
+                                            temp_vec.push(Rc::new(RefCell::new($module)));
+                                        )*
+                                        temp_vec
+                                    }}
+                                }
+                    
+                    
+                                // in debug mode it needs to be mutable to add the TestModule but otherwise it doesn't need to be
+                                #[cfg(build = "debug")]
+                                let mut modules;
+                                #[cfg(not(build = "debug"))]
+                                let modules;
+                    
+                                let static_rc_jni_env: &'static Rc<JNIEnv<'static>> = unsafe { std::mem::transmute(client_manager.get_jni_env()) };
+                                let static_mappings_manager: &'static Rc<MappingsManager<'static>> = unsafe { std::mem::transmute(client_manager.get_mappings_manager()) };
+                    
+                                // add all non-debug modules
+                                modules = modules_maker![
+                                    //AutoTotem::new_boxed(static_rc_jni_env, static_mappings_manager),
+                                    //Triggerbot::new_boxed(static_rc_jni_env, static_mappings_manager),
+                                    Esp::new_boxed(static_rc_jni_env, static_mappings_manager)
+                                ];
+                    
+                                // if in debug add debug modules
+                                #[cfg(build = "debug")]
+                                modules.append(&mut modules_maker![
+                                    //TestModule::new_boxed(static_rc_jni_env, static_mappings_manager)
+                                ]);
+                    
+                                Rc::new(modules)
+                            };
+                            client_manager.init(modules);
+                            let modules = client_manager.get_modules();
 
                             // enable the CLIENT_MANAGER
-                            CLIENT_MANAGER.get_mut().unwrap().set_enabled(true);
+                            CLIENT_MANAGER.get().unwrap().set_enabled(true);
 
 
                             // get the clickgui
@@ -167,7 +210,7 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
                             run_clickgui(clickgui);
 
                             // disable the CLIENT_MANAGER
-                            CLIENT_MANAGER.get_mut().unwrap().set_enabled(false);
+                            CLIENT_MANAGER.get().unwrap().set_enabled(false);
                         });
                     }
                     Message::KillThread => break,  // exit the loop and start the process of ejection
@@ -182,21 +225,12 @@ unsafe extern "system" fn main_loop(base: LPVOID) -> u32 {
     let client_thread = std::thread::spawn(move || {
         loop {
             match client_rx.try_recv() {
-                Ok(msg) => if msg == Message::KillThread {
-                    break;
-                } else {
-                    match CLIENT_MANAGER.get() {
-                        Some(client_manager) => {
-                            client_manager.call_callbacks();
-                        }
-                        None => {}
-                    }
-                },
+                Ok(msg) if msg == Message::KillThread => break,
                 _ => {
                     // might not wanna grab this constantly but hey that's for the future
                     match CLIENT_MANAGER.get() {
                         Some(client_manager) => {
-                            client_manager.call_callbacks();
+                            client_manager.call_callbacks(managers::ClientCallbackType::Tick);
                         }
                         None => {}
                     }
@@ -298,7 +332,7 @@ pub extern "stdcall" fn DllMain(
 
 #[crochet::hook("opengl32.dll", "wglSwapBuffers")]
 fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
-    let is_ready = WAITING_CELL.get_or_init(|| {
+    let is_ready = RENDER_WAITING_CELL.get_or_init(|| {
         // initialize all the opengl stuff
         {
             unsafe {

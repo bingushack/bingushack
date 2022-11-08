@@ -48,6 +48,7 @@ impl BingusModule for Triggerbot {
 
         let to_ret = unsafe { std::mem::transmute::<Box<Self>, BoxedBingusModule>(to_ret) };
         <crate::client::module::modules::triggerbot::Triggerbot as BingusModule>::add_client_tick_method_to_manager(*to_ret, env, mappings_manager);
+        <crate::client::module::modules::triggerbot::Triggerbot as BingusModule>::add_module_load_method_to_manager(*to_ret, env, mappings_manager);
         <crate::client::module::modules::triggerbot::Triggerbot as BingusModule>::add_render_method_to_manager(*to_ret);
         to_ret
     }
@@ -141,13 +142,13 @@ impl BingusModule for Triggerbot {
         ).unwrap();
     }
 
-    fn on_load(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn on_load(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_unload(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn on_unload(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_enable(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn on_enable(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_disable(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn on_disable(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
     fn get_all_settings(&self) -> AllSettingsType {
         Arc::clone(&self.settings)

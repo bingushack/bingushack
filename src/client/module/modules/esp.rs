@@ -12,7 +12,7 @@ use winapi::{shared::windef::{HDC}, um::{wingdi::{wglGetCurrentContext, wglMakeC
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::{Arc, Mutex, Once}, ffi::CString, time::{Duration, SystemTime},
+    sync::{Arc, Mutex, Once}, ffi::CString, time::{Duration, SystemTime}, any::Any,
 };
 use gl::types::{GLfloat, GLenum, GLuint, GLchar, GLint, GLboolean, GLsizeiptr};
 use std::str;
@@ -61,12 +61,12 @@ impl BingusModule for Esp {
             ))]))),
         };
 
-        let to_ret = Box::new(to_ret);
-
-        let to_ret = unsafe { std::mem::transmute::<Box<Self>, BoxedBingusModule>(to_ret) };
-        <crate::client::module::modules::esp::Esp as BingusModule>::add_client_tick_method_to_manager(*to_ret, env, mappings_manager);
-        <crate::client::module::modules::esp::Esp as BingusModule>::add_render_method_to_manager(*to_ret);
-        to_ret
+        let to_ret: Box<dyn Any> = unsafe { std::mem::transmute(to_ret) };
+        let slf = *to_ret.downcast().unwrap();
+        <crate::client::module::modules::esp::Esp as BingusModule>::add_client_tick_method_to_manager(slf, env, mappings_manager);
+        <crate::client::module::modules::esp::Esp as BingusModule>::add_module_load_method_to_manager(slf, env, mappings_manager);
+        <crate::client::module::modules::esp::Esp as BingusModule>::add_render_method_to_manager(slf);
+        Box::new(slf)
     }
 
     fn tick(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
@@ -75,13 +75,13 @@ impl BingusModule for Esp {
         esp(1.0);
     }
 
-    fn on_load(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn on_load(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_unload(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn on_unload(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_enable(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn on_enable(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_disable(&mut self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
+    fn on_disable(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
     fn get_all_settings(&self) -> AllSettingsType {
         Arc::clone(&self.settings)

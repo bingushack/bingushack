@@ -26,7 +26,7 @@ pub trait BingusModule {
     where
         Self: Sized
     {
-        fn foo(module: &dyn BingusModule) -> Box<dyn Fn() -> () + 'static> {
+        fn foo(module: &'static dyn BingusModule) -> Box<dyn Fn() -> () + 'static> { // making static in foo args maybe breaks it?
             let module = unsafe { std::mem::transmute::<&dyn BingusModule, &dyn BingusModule>(module) };
             Box::new(move || module.render_event())
         }
@@ -45,19 +45,32 @@ pub trait BingusModule {
         }
         let callback = foo(module, env, mappings_manager);
         unsafe {
-            CLIENT_MANAGER.get_mut().unwrap().add_callback(callback, module.get_enabled_setting());
+            CLIENT_MANAGER.get_mut().unwrap().add_callback(callback, module.get_enabled_setting(), crate::managers::ClientCallbackType::Tick);
+        }
+    }
+
+    fn add_module_load_method_to_manager(module: &'static dyn BingusModule, env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>)
+    where
+        Self: Sized
+    {
+        fn foo(module: &'static dyn BingusModule, env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) -> Box<dyn Fn() -> () + 'static> {
+            Box::new(move || module.on_load(Rc::clone(&env), Rc::clone(&mappings_manager)))
+        }
+        let callback = foo(module, env, mappings_manager);
+        unsafe {
+            CLIENT_MANAGER.get_mut().unwrap().add_callback(callback, module.get_enabled_setting(), crate::managers::ClientCallbackType::Load);
         }
     }
 
     fn render_event(&self) {}
 
-    fn on_load(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
+    fn on_load(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_unload(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
+    fn on_unload(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_enable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
+    fn on_enable(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
 
-    fn on_disable(&mut self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
+    fn on_disable(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
 
     fn get_all_settings(&self) -> AllSettingsType;
 
