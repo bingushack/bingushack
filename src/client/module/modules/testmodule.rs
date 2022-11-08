@@ -7,7 +7,7 @@ use super::{
 };
 use crate::client::{
     mapping::MappingsManager,
-    setting::{BooleanSetting, FloatSetting},
+    setting::{BooleanSetting, FloatSetting}, module::module::Newable,
 };
 use crate::{
     apply_object,
@@ -21,33 +21,33 @@ use std::{
 };
 
 pub struct TestModule {
-    enabled: SettingType,
+    enabled: Option<SettingType>,
 
-    settings: AllSettingsType,
+    settings: Option<AllSettingsType>,
+}
+
+// derive macro when?
+impl Newable for TestModule {
+    fn new() -> Self {
+        Self {
+            enabled: None,
+            settings: None,
+        }
+    }
 }
 
 impl BingusModule for TestModule {
-    fn new_boxed(env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) -> BoxedBingusModule {
-        let to_ret = Self {
-            enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
-                BooleanSetting::new(SettingValue::from(false), "enabled"),
-            )))),
-            settings: Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
-                BingusSettings::FloatSetting(FloatSetting::new(
-                    SettingValue::from(0.0),
-                    "float",
-                    0.0..=100.0,
-                )),
-            ))]))),
-        };
-
-        let to_ret = Box::new(to_ret);
-
-        let to_ret = unsafe { std::mem::transmute::<Box<Self>, BoxedBingusModule>(to_ret) };
-        <crate::client::module::modules::testmodule::TestModule as BingusModule>::add_client_tick_method_to_manager(*to_ret, env, mappings_manager);
-        <crate::client::module::modules::testmodule::TestModule as BingusModule>::add_module_load_method_to_manager(*to_ret, env, mappings_manager);
-        <crate::client::module::modules::testmodule::TestModule as BingusModule>::add_render_method_to_manager(*to_ret);
-        to_ret
+    fn init(&mut self) {
+        self.enabled = Some(Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
+            BooleanSetting::new(SettingValue::from(false), "enabled"),
+        )))));
+        self.settings = Some(Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
+            BingusSettings::FloatSetting(FloatSetting::new(
+                SettingValue::from(0.0),
+                "float",
+                0.0..=100.0,
+            )),
+        ))]))));
     }
 
     fn tick(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
@@ -58,20 +58,12 @@ impl BingusModule for TestModule {
         );
     }
 
-    fn on_load(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
-
-    fn on_unload(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
-
-    fn on_enable(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
-
-    fn on_disable(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
-
     fn get_all_settings(&self) -> AllSettingsType {
-        Arc::clone(&self.settings)
+        Arc::clone(self.settings.as_ref().unwrap())
     }
 
     fn get_enabled_setting(&self) -> SettingType {
-        Arc::clone(&self.enabled)
+        Arc::clone(self.enabled.as_ref().unwrap())
     }
 
     fn to_name(&self) -> String {

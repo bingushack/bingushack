@@ -3,7 +3,7 @@ use super::{
 };
 use crate::{client::{
     mapping::MappingsManager,
-    setting::{BooleanSetting, FloatSetting},
+    setting::{BooleanSetting, FloatSetting}, module::module::Newable,
 }, NEW_CONTEXT, STATIC_HDC, log_to_file};
 
 use jni::JNIEnv;
@@ -41,54 +41,44 @@ void main() {
 }";
 
 pub struct Esp {
-    enabled: SettingType,
+    enabled: Option<SettingType>,
 
-    settings: AllSettingsType,
+    settings: Option<AllSettingsType>,
+}
+
+impl Newable for Esp {
+    fn new() -> Self {
+        Self {
+            enabled: None,
+            settings: None,
+        }
+    }
 }
 
 impl BingusModule for Esp {
-    fn new_boxed(env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) -> BoxedBingusModule {
-        let to_ret = Self {
-            enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
-                BooleanSetting::new(SettingValue::from(false), "enabled"),
-            )))),
-            settings: Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
-                BingusSettings::FloatSetting(FloatSetting::new(
-                    SettingValue::from(0.0),
-                    "does nothing",
-                    0.0..=100.0,
-                )),
-            ))]))),
-        };
-
-        let to_ret: Box<dyn Any> = unsafe { std::mem::transmute(to_ret) };
-        let slf = *to_ret.downcast().unwrap();
-        <crate::client::module::modules::esp::Esp as BingusModule>::add_client_tick_method_to_manager(slf, env, mappings_manager);
-        <crate::client::module::modules::esp::Esp as BingusModule>::add_module_load_method_to_manager(slf, env, mappings_manager);
-        <crate::client::module::modules::esp::Esp as BingusModule>::add_render_method_to_manager(slf);
-        Box::new(slf)
+    fn init(&mut self) {
+        self.enabled = Some(Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
+            BooleanSetting::new(SettingValue::from(false), "enabled"),
+        )))));
+        self.settings = Some(Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
+            BingusSettings::FloatSetting(FloatSetting::new(
+                SettingValue::from(0.0),
+                "does nothing",
+                0.0..=100.0,
+            )),
+        ))]))));
     }
-
-    fn tick(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
 
     fn render_event(&self) {
         esp(1.0);
     }
 
-    fn on_load(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
-
-    fn on_unload(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
-
-    fn on_enable(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
-
-    fn on_disable(&self, _env: Rc<JNIEnv>, _mappings_manager: Rc<MappingsManager>) {}
-
     fn get_all_settings(&self) -> AllSettingsType {
-        Arc::clone(&self.settings)
+        Arc::clone(self.settings.as_ref().unwrap())
     }
 
     fn get_enabled_setting(&self) -> SettingType {
-        Arc::clone(&self.enabled)
+        Arc::clone(self.enabled.as_ref().unwrap())
     }
 
     fn to_name(&self) -> String {

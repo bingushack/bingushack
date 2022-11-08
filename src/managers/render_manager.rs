@@ -17,7 +17,7 @@ impl RenderManager {
         self.callbacks.push((method, enabled));
     }
 
-    pub fn get_render_methods(&self) -> &Vec<(&dyn Fn(), SettingType)> {
+    pub fn get_render_methods(&self) -> &Vec<(&dyn Fn(), SettingType)> {  // turn this into a call_callbacks method
         &self.callbacks
     }
 }
