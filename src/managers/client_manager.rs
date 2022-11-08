@@ -4,7 +4,7 @@ use jni::JNIEnv;
 
 use crate::{client::{BoxedBingusModule, module::{modules::*, BingusModule, SettingType, Newable, add_client_callback, add_render_method_to_manager}, MappingsManager}, log_to_file};
 
-pub type ModulesRc = Rc<Vec<Rc<RefCell<ModulesEnum>>>>;
+pub type ModulesRc = Rc<Vec<Rc<RefCell<Rc<&'static ModulesEnum>>>>>;
 
 pub struct ClientManager {
     tick_callbacks: Vec<(Box<dyn Fn()>, SettingType)>,
@@ -46,16 +46,13 @@ impl ClientManager {
             // this macro will create and initialize a module to be added to the vector
             macro_rules! modules_initiator {
                 ($module_ty:ident) => {{
-                    let mut md: ModulesEnum = <$module_ty>::new().into();
-                    md.init();
+                    let md: ModulesEnum = <$module_ty>::new().into();
                     let enabled = md.get_enabled_setting();
 
-                    let md_ref = unsafe { std::mem::transmute::<&ModulesEnum, &'static ModulesEnum>(&md) };
-
                     //md.add_render_method_to_manager().add_client_callback(&self.jni_env, &self.mappings_manager, enabled, ClientCallbackType::Tick)
-                    add_render_method_to_manager(md_ref);
-                    add_client_callback(md_ref, &self.jni_env, &self.mappings_manager, enabled, ClientCallbackType::Tick);
-                    md
+                    let md = add_render_method_to_manager(md);
+                    let md = add_client_callback(md, &self.jni_env, &self.mappings_manager, enabled, ClientCallbackType::Tick);
+                    Rc::new(md)
                 }}
             }
 
@@ -80,7 +77,7 @@ impl ClientManager {
             ]);
 
             Rc::new(modules)
-        };;
+        };
     }
 
     pub fn get_modules(&self) -> ModulesRc {

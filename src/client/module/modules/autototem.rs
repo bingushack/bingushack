@@ -27,42 +27,35 @@ use std::{
 
 pub struct AutoTotem {
     // todo make this enabled settings boilerplate shit a proc macro
-    enabled: Option<SettingType>,
+    enabled: SettingType,
 
-    settings: Option<AllSettingsType>,
-    needing_swap_time: Option<RefCell<SystemTime>>,
+    settings: AllSettingsType,
+    needing_swap_time: RefCell<SystemTime>,
 }
 
 impl Newable for AutoTotem {
     fn new() -> Self {
         Self {
-            enabled: None,
-            settings: None,
-            needing_swap_time: None,
+            enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
+                BooleanSetting::new(SettingValue::from(false), "enabled"),
+            )))),
+            settings: Arc::new(Mutex::new(RefCell::new(vec![
+                Rc::new(RefCell::new(BingusSettings::RangeSetting(
+                    RangeSetting::new(
+                        SettingValue::from([200.0, 250.0]),
+                        0.0..=500.0,
+                        Some(0),
+                        Some(1.0),
+                        "delay (100ths of a second)",
+                    ),
+                ))),
+            ]))),
+            needing_swap_time: RefCell::new(SystemTime::now()),
         }
     }
 }
 
 impl BingusModule for AutoTotem {
-    fn init(&mut self) {
-        self.enabled = Some(Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
-            BooleanSetting::new(SettingValue::from(false), "enabled"),
-        )))));
-        // todo turn this into a hashmap
-        self.settings = Some(Arc::new(Mutex::new(RefCell::new(vec![
-            Rc::new(RefCell::new(BingusSettings::RangeSetting(
-                RangeSetting::new(
-                    SettingValue::from([200.0, 250.0]),
-                    0.0..=500.0,
-                    Some(0),
-                    Some(1.0),
-                    "delay (100ths of a second)",
-                ),
-            ))),
-        ]))));
-        self.needing_swap_time = Some(RefCell::new(SystemTime::now()));
-    }
-
     fn tick(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
         let minecraft_client = mappings_manager.get("MinecraftClient").unwrap();
         apply_object!(
@@ -126,9 +119,9 @@ impl BingusModule for AutoTotem {
 
         if !offhand_is_totem {
             {
-                let time_since_lost_totem = SystemTime::now().duration_since(*self.needing_swap_time.as_ref().unwrap().borrow()).unwrap().as_millis();
+                let time_since_lost_totem = SystemTime::now().duration_since(*self.needing_swap_time.borrow()).unwrap().as_millis();
                 let next_delay = {
-                    let settings_mutex_guard = self.settings.as_ref().unwrap().lock().unwrap();
+                    let settings_mutex_guard = self.settings.lock().unwrap();
                     let settings = settings_mutex_guard.borrow();
                     let borrowed_settings = RefCell::borrow(settings);
                     let bingus_setting_ref = RefCell::borrow(borrowed_settings.get(0).unwrap());
@@ -138,7 +131,7 @@ impl BingusModule for AutoTotem {
                 if time_since_lost_totem < next_delay * 10 {
                     return;
                 } else {
-                    *self.needing_swap_time.as_ref().unwrap().borrow_mut() = SystemTime::now();
+                    *self.needing_swap_time.borrow_mut() = SystemTime::now();
                 }
             }
 
@@ -256,11 +249,11 @@ impl BingusModule for AutoTotem {
     }
 
     fn get_all_settings(&self) -> AllSettingsType {
-        Arc::clone(self.settings.as_ref().unwrap())
+        Arc::clone(&self.settings)
     }
 
     fn get_enabled_setting(&self) -> SettingType {
-        Arc::clone(self.enabled.as_ref().unwrap())
+        Arc::clone(&self.enabled)
     }
 
     fn to_name(&self) -> String {

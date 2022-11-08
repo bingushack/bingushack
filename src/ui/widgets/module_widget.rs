@@ -6,7 +6,7 @@ use std::{cell::{RefMut, Ref}, rc::Rc};
 use super::{toggle, DoubleSlider};
 
 // lifetime fuckery because jni object lifetimes
-fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Ref<ModulesEnum>) -> egui::Response {
+fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Ref<Rc<&'static ModulesEnum>>) -> egui::Response {
     let desired_size = ui.spacing().interact_size.y * egui::vec2(5.0, 2.0);
 
     // response is mut on purpose
@@ -75,6 +75,6 @@ fn module_ui<'a>(ui: &mut egui::Ui, module: &'a Ref<ModulesEnum>) -> egui::Respo
     response
 }
 
-pub fn module_widget<'a>(module: &'a Ref<ModulesEnum>) -> impl egui::Widget + 'a {
+pub fn module_widget<'a>(module: &'a Ref<Rc<&'static ModulesEnum>>) -> impl egui::Widget + 'a {
     move |ui: &mut egui::Ui| module_ui(ui, module)
 }

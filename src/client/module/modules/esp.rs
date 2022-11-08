@@ -41,44 +41,39 @@ void main() {
 }";
 
 pub struct Esp {
-    enabled: Option<SettingType>,
+    enabled: SettingType,
 
-    settings: Option<AllSettingsType>,
+    settings: AllSettingsType,
 }
 
 impl Newable for Esp {
     fn new() -> Self {
         Self {
-            enabled: None,
-            settings: None,
+            enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
+                BooleanSetting::new(SettingValue::from(false), "enabled"),
+            )))),
+            settings: Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
+                BingusSettings::FloatSetting(FloatSetting::new(
+                    SettingValue::from(0.0),
+                    "does nothing",
+                    0.0..=100.0,
+                )),
+            ))]))),
         }
     }
 }
 
 impl BingusModule for Esp {
-    fn init(&mut self) {
-        self.enabled = Some(Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
-            BooleanSetting::new(SettingValue::from(false), "enabled"),
-        )))));
-        self.settings = Some(Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
-            BingusSettings::FloatSetting(FloatSetting::new(
-                SettingValue::from(0.0),
-                "does nothing",
-                0.0..=100.0,
-            )),
-        ))]))));
-    }
-
     fn render_event(&self) {
         esp(1.0);
     }
 
     fn get_all_settings(&self) -> AllSettingsType {
-        Arc::clone(self.settings.as_ref().unwrap())
+        Arc::clone(&self.settings)
     }
 
     fn get_enabled_setting(&self) -> SettingType {
-        Arc::clone(self.enabled.as_ref().unwrap())
+        Arc::clone(&self.enabled)
     }
 
     fn to_name(&self) -> String {

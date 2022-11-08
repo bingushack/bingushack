@@ -24,34 +24,29 @@ use std::{
 };
 
 pub struct Triggerbot {
-    enabled: Option<SettingType>,
+    enabled: SettingType,
 
-    settings: Option<AllSettingsType>,
+    settings: AllSettingsType,
 }
 
 impl Newable for Triggerbot {
     fn new() -> Self {
         Self {
-            enabled: None,
-            settings: None,
+            enabled: Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
+                BooleanSetting::new(SettingValue::from(false), "enabled"),
+            )))),
+            settings: Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
+                BingusSettings::FloatSetting(FloatSetting::new(
+                    SettingValue::from(0.0),
+                    "range",
+                    0.0..=5.0,
+                )),
+            ))]))),
         }
     }
 }
 
 impl BingusModule for Triggerbot {
-    fn init(&mut self) {
-        self.enabled = Some(Arc::new(Mutex::new(RefCell::new(BingusSettings::BooleanSetting(
-            BooleanSetting::new(SettingValue::from(false), "enabled"),
-        )))));
-        self.settings = Some(Arc::new(Mutex::new(RefCell::new(vec![Rc::new(RefCell::new(
-            BingusSettings::FloatSetting(FloatSetting::new(
-                SettingValue::from(0.0),
-                "range",
-                0.0..=5.0,
-            )),
-        ))]))));
-    }
-
     // todo make it so it won't attack if you're in a container (chest etc)
     fn tick(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {
         // check if player is targetting an entity
@@ -142,11 +137,11 @@ impl BingusModule for Triggerbot {
     }
 
     fn get_all_settings(&self) -> AllSettingsType {
-        Arc::clone(self.settings.as_ref().unwrap())
+        Arc::clone(&self.settings)
     }
 
     fn get_enabled_setting(&self) -> SettingType {
-        Arc::clone(self.enabled.as_ref().unwrap())
+        Arc::clone(&self.enabled)
     }
 
     fn to_name(&self) -> String {

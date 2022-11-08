@@ -342,19 +342,7 @@ fn swapbuffers_hook(hdc: winapi::shared::windef::HDC) -> winapi::ctypes::c_int {
 
             let manager = RENDER_MANAGER.get();
             if let Some(manager) = manager {
-                for callback in manager.get_render_methods() {
-                    let (callback, enabled) = callback;
-                    if enabled
-                        .lock()
-                        .unwrap()
-                        .borrow()
-                        .get_value()
-                        .try_into()
-                        .unwrap()
-                    {
-                        callback();
-                    }
-                }
+                manager.call_render_callbacks();
             }
         }
     }

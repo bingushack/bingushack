@@ -11,9 +11,6 @@ use winapi::shared::windef::HDC__;
 // atm it is a trait which each module implements
 #[enum_dispatch]
 pub trait BingusModule {
-    // where you add the fields to the struct including enabled or not and settings
-    fn init(&mut self);
-
     fn tick(&self, env: Rc<JNIEnv>, mappings_manager: Rc<MappingsManager>) {}
 
     fn if_enabled_tick(&self, env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) {
@@ -52,14 +49,16 @@ pub trait BingusModule {
 }
 
 pub trait Newable {
+    // where you add the fields to the struct including enabled or not and settings
     fn new() -> Self;
 }
 
-pub fn add_render_method_to_manager(md: &'static ModulesEnum) {
-    let callback = _render_foo(md);
+pub fn add_render_method_to_manager(md: ModulesEnum) -> &'static ModulesEnum {
+    let (callback, md) = _render_foo(&md);
     unsafe {
-        RENDER_MANAGER.get_mut().unwrap().add_render_method(&callback, md.get_enabled_setting());
+        RENDER_MANAGER.get_mut().unwrap().add_render_method(callback, md.get_enabled_setting());
     }
+    md
 }
 
 pub fn add_client_callback(
@@ -68,52 +67,35 @@ pub fn add_client_callback(
     mappings_manager: &'static Rc<MappingsManager>,
     setting: SettingType,
     client_callback_type: ClientCallbackType,
-) {
-    let callback = _client_foo(md, env, mappings_manager, client_callback_type);
+) -> &'static ModulesEnum {
+    let (callback, md) = _client_foo(&md, env, mappings_manager, client_callback_type);
     unsafe {
         CLIENT_MANAGER.get_mut().unwrap().add_callback(callback, setting, client_callback_type);
     }
+    md
 }
 
-fn _render_foo(md: &'static ModulesEnum) -> Box<dyn Fn() -> () + 'static> {
-    Box::new(move || md.render_event())
+fn _render_foo<'a>(md: &'a ModulesEnum) -> (Box<dyn Fn()>, &'static ModulesEnum) {
+    // transmute md to static lifetime
+    let md = unsafe { std::mem::transmute::<&ModulesEnum, &'static ModulesEnum>(md) };
+    let mth = Box::new(move || md.render_event());
+    // transmute mth to static lifetime
+    (mth, md)
 }
 
-fn _client_foo(md: &'static ModulesEnum, env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>, client_callback_type: ClientCallbackType) -> Box<dyn Fn() -> () + 'static> {
-    match client_callback_type {
-        ClientCallbackType::Tick => Box::new(move || md.if_enabled_tick(env, mappings_manager)),
-        ClientCallbackType::Load => Box::new(move || md.on_load(Rc::clone(env), Rc::clone(mappings_manager))),
-    }
+fn _client_foo<'a>(
+    md: &'a ModulesEnum,
+    env: &'static Rc<JNIEnv>,
+    mappings_manager: &'static Rc<MappingsManager>,
+    client_callback_type: ClientCallbackType
+) -> (Box<dyn Fn()>, &'static ModulesEnum) {
+    // transmute md to static lifetime
+    let md = unsafe { std::mem::transmute::<&ModulesEnum, &'static ModulesEnum>(md) };
+    (
+        match client_callback_type {
+            ClientCallbackType::Tick => Box::new(move || md.if_enabled_tick(env, mappings_manager)),
+            ClientCallbackType::Load => Box::new(move || md.on_load(Rc::clone(env), Rc::clone(mappings_manager))),
+        },
+        md
+    )
 }
-
-/*
-fn add_render_method_to_manager(module: ModulesEnum) {
-    fn foo(module: ModulesEnum) -> Box<dyn Fn() -> () + 'static> {
-        Box::new(move || module.render_event())
-    }
-    let callback = foo(module);
-    unsafe {
-        RENDER_MANAGER.get_mut().unwrap().add_render_method(&callback, module.get_enabled_setting());
-    }
-}
-
-fn add_client_tick_method_to_manager(module: ModulesEnum, env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) {
-    fn foo(module: ModulesEnum, env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) -> Box<dyn Fn() -> () + 'static> {
-        Box::new(move || module.if_enabled_tick(env, mappings_manager))
-    }
-    let callback = foo(module, env, mappings_manager);
-    unsafe {
-        CLIENT_MANAGER.get_mut().unwrap().add_callback(callback, module.get_enabled_setting(), crate::managers::ClientCallbackType::Tick);
-    }
-}
-
-fn add_module_load_method_to_manager(module: ModulesEnum, env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) {
-    fn foo(module: ModulesEnum, env: &'static Rc<JNIEnv>, mappings_manager: &'static Rc<MappingsManager>) -> Box<dyn Fn() -> () + 'static> {
-        Box::new(move || module.on_load(Rc::clone(&env), Rc::clone(&mappings_manager)))
-    }
-    let callback = foo(module, env, mappings_manager);
-    unsafe {
-        CLIENT_MANAGER.get_mut().unwrap().add_callback(callback, module.get_enabled_setting(), crate::managers::ClientCallbackType::Load);
-    }
-}
-*/

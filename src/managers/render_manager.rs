@@ -1,7 +1,7 @@
 use crate::client::module::SettingType;
 
 pub struct RenderManager {
-    callbacks: Vec<(&'static dyn Fn(), SettingType)>,
+    callbacks: Vec<(Box<dyn Fn()>, SettingType)>,
 }
 
 impl RenderManager {
@@ -11,13 +11,21 @@ impl RenderManager {
         }
     }
 
-    pub fn add_render_method<'a>(&mut self, method: &'a dyn Fn(), enabled: SettingType) {
-        // transmute to static lifetime
-        let method: &'static dyn Fn() = unsafe { std::mem::transmute(method) };
+    pub fn add_render_method<'a>(&mut self, method: Box<dyn Fn()>, enabled: SettingType) {
         self.callbacks.push((method, enabled));
     }
 
-    pub fn get_render_methods(&self) -> &Vec<(&dyn Fn(), SettingType)> {  // turn this into a call_callbacks method
-        &self.callbacks
+    pub fn call_render_callbacks(&self) {
+        for (callback, enabled) in &self.callbacks {
+            if enabled.lock()
+                .unwrap()
+                .borrow()
+                .get_value()
+                .try_into()
+                .unwrap()
+            {
+                callback();
+            }
+        }
     }
 }
