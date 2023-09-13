@@ -13,6 +13,6 @@ use the injector to inject the dll you just built by running `bingushack-injecto
 
 # why it's public
 
-it hardly works and the approach of this is fundementally flawed. this is the old version. i am releasing it so people don't have to go thru the pain i did.
+it hardly works. this is the old version. i am releasing it so people don't have to go thru the pain i did.
 
 if you cant code dont bother with this. it doesnt work and is only public to be used as reference material for other clients.
